@@ -21,4 +21,7 @@ nbbuild/
 dist/
 nbdist/
 .nb-gradle/
+out/
+logs/
+.gradle/
 dependency-reduced-pom.xml

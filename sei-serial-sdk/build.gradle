@@ -1,0 +1,73 @@
+apply plugin: 'java'
+apply plugin: 'maven'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+
+
+// java编译的时候缺省状态下会因为中文字符而失败
+[compileJava, compileTestJava, javadoc]*.options*.encoding = 'UTF-8'
+
+dependencies {
+    compile("com.changhong.sei:sei-util:6.0.1.1")
+    compile("com.alibaba:fastjson:1.2.28")
+    compile("org.springframework.boot:spring-boot-starter-data-redis")
+    compile("org.springframework.boot:spring-boot-starter-data-jpa")
+}
+
+bootJar { enabled = false }
+jar {
+    manifest {
+        attributes("Manifest-Version": "1.0")
+        attributes("Created-By": "${System.properties['java.version']} (${System.properties['java.vendor']} ${System.properties['java.vm.version']})".toString())
+        attributes("Implementation-Title": "SEI-$project.name")
+        attributes("Implementation-Version": "$project.version")
+        attributes("Implementation-Vendor": "rcsit.cn")
+        attributes("Build-Time": new Date().format("yyyy-MM-dd HH:mm:ss"))
+    }
+    //这里一定得要。在多模块下，不然编译失败，因为不会把信赖模块给打包。
+    enabled = true
+}
+
+
+/////////////////////////////////////上传Maven仓库////////////////////////////////////////
+//打包源代码
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives sourcesJar
+}
+
+//如果希望gradle install，安装到.m2本地仓库，参考下面的内容
+install {
+    repositories.mavenInstaller {
+        pom.version = "$project.version"
+        pom.artifactId = "$project.name"
+        pom.groupId = "$project.group"
+    }
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
+//上传到nexus
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: MAVEN_REPO_URL) {
+                authentication(userName: NEXUS_USERNAME, password: NEXUS_PASSWORD)
+            }
+            pom.version = "$project.version"
+            pom.artifactId = "$project.name"
+            pom.groupId = "$project.group"
+        }
+    }
+    return 'Success'
+}
+
+// gradle upload

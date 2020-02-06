@@ -1,1 +1,5 @@
 rootProject.name = 'sei-serial'
+include 'sei-serial-service'
+include 'sei-serial-api'
+include 'sei-serial-sdk'
+
