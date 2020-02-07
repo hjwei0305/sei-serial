@@ -51,19 +51,105 @@ public class SerialService {
 
     private DataSource dataSource;
 
+    /***
+     * 不依赖redis 和 数据库
+     * @param configAddress
+     */
     public SerialService(String configAddress){
         this.configAddress = configAddress;
     }
 
+    /***
+     * 依赖数据库
+     *
+     * @param configAddress
+     * @param redisTemplate
+     * @param dataSource
+     */
     public SerialService(String configAddress,RedisTemplate redisTemplate,DataSource dataSource) {
         this.configAddress = configAddress;
         this.redisTemplate = redisTemplate;
         this.dataSource = dataSource;
     }
 
+    /***
+     * 依赖数据库，不依赖redis
+     *
+     * @param url
+     * @param dataSource
+     */
     public SerialService(String url, DataSource dataSource) {
         this.configAddress = url;
         this.dataSource = dataSource;
+    }
+
+    /**
+     * 通过类地址获取编号
+     * @param classPath
+     * @return
+     */
+    public String getNumber(String classPath) {
+        return this.getNumber(classPath,null);
+    }
+
+    /**
+     * 通过类地址和参数获取编号
+     * @param classPath
+     * @param param
+     * @return
+     */
+    public String getNumber(String classPath,Map<String, String> param){
+       return this.getNumber(classPath,param,null);
+    }
+
+    /***
+     * 通过类地址，参数，表名获取编号
+     * @param classPath
+     * @param param
+     * @param tableName
+     * @return
+     */
+    public String getNumber(String classPath,Map<String, String> param, String tableName){
+        SerialConfig config = getSerialConfig(classPath);
+        if(Objects.isNull(config)){
+            log.error("未获取到相应class【{}】的配置",classPath);
+            return null;
+        }
+        if (Boolean.TRUE.equals(config.getGenFlag())) {
+            log.info("直接从服务获取编号进行解析");
+            return parserExpression(config, config.getCurrentSerial(),param);
+        }
+        Long number = getNextNumber(classPath, tableName, config);
+        log.info("获得 {} 的下一编号为 {}",classPath,number);
+        return parserExpression(config,number,param);
+    }
+
+    /**
+     * 通过实体类获取标号
+     * @param clz
+     * @return
+     */
+    public String getNumber(Class clz){
+        return this.getNumber(clz,null);
+    }
+
+    /***
+     * 通过实体类和参数获取编号
+     * @param clz
+     * @param param
+     * @return
+     */
+    public String getNumber(Class clz, Map<String, String> param) {
+        String path = clz.getName();
+        Annotation[] annotations = clz.getAnnotations();
+        String tableName = "";
+        for (int i = 0; i < annotations.length; i++) {
+            Annotation currentAnnotation = annotations[i];
+            if(currentAnnotation instanceof Table){
+                tableName = ((Table) currentAnnotation).name();
+            }
+        }
+        return getNumber(path ,param, tableName);
     }
 
     private SerialConfig getSerialConfig(String path) {
@@ -110,67 +196,6 @@ public class SerialService {
             log.error("给号服务发送GET请求出现异常", e);
         }
         return result.toString();
-    }
-
-    /**
-     * get方式URL拼接
-     *
-     * @param url
-     * @param map
-     * @return
-     */
-    private static String getRequestUrl(String url, Map<String, String> map) {
-        if (map == null || map.size() == 0) {
-            return url;
-        } else {
-            StringBuilder newUrl = new StringBuilder(url);
-            if (url.indexOf("?") == -1) {
-                newUrl.append("?rd=" + Math.random());
-            }
-
-            for (Map.Entry<String, String> item : map.entrySet()) {
-                if (StringUtils.isNotBlank(item.getKey().trim())) {
-                    try {
-                        newUrl.append("&" + item.getKey().trim() + "=" + URLEncoder.encode(item.getValue().trim(), "UTF-8"));
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-            return newUrl.toString();
-        }
-    }
-
-    public String getNumber(String classPath,Map<String, String> param){
-       return this.getNumber(classPath,param,null);
-    }
-
-    public String getNumber(String classPath,Map<String, String> param, String tableName){
-        SerialConfig config = getSerialConfig(classPath);
-        if(Objects.isNull(config)){
-            log.error("未获取到相应class【{}】的配置",classPath);
-            return null;
-        }
-        if (Boolean.TRUE.equals(config.getGenFlag())) {
-            log.info("直接从服务获取编号进行解析");
-            return parserExpression(config, config.getCurrentSerial(),param);
-        }
-        Long number = getNextNumber(classPath, tableName, config);
-        log.info("获得 {} 的下一编号为 {}",classPath,number);
-        return parserExpression(config,number,param);
-    }
-
-    public String getNumber(Class clz, Map<String, String> param) {
-        String path = clz.getName();
-        Annotation[] annotations = clz.getAnnotations();
-        String tableName = "";
-        for (int i = 0; i < annotations.length; i++) {
-            Annotation currentAnnotation = annotations[i];
-            if(currentAnnotation instanceof Table){
-                tableName = ((Table) currentAnnotation).name();
-            }
-        }
-        return getNumber(path ,param, tableName);
     }
 
     private Long getNextNumber(String path, String tableName,SerialConfig config) {
@@ -224,6 +249,10 @@ public class SerialService {
         if(log.isDebugEnabled()){
             log.debug("获取到 table 名称为 {}", tableName);
         }
+        if(Objects.isNull(dataSource)){
+            log.info("没有数据库配置，无法进行校准");
+            return null;
+        }
         if(StringUtils.isNotBlank(tableName)){
             final String sql = "select max(code) as code from "+tableName;
             log.info("编号校准请求sql为 {}", sql);
@@ -262,19 +291,20 @@ public class SerialService {
 
     private String parserExpression(SerialConfig config, Long currentSerial,Map<String, String> param) {
         String expressionConfig = config.getExpressionConfig();
-        Matcher paramMatcher = paramPattern.matcher(expressionConfig);
-        while (paramMatcher.find()){
-            String paramItem = paramMatcher.group(0);
-            if(isDateParam(paramItem)){
-                String now  = DateTimeFormatter.ofPattern(paramItem).format(LocalDateTime.now());
-                expressionConfig = expressionConfig.replace("${"+paramItem+"}",now);
+        if(Objects.nonNull(param) && !param.isEmpty()){
+            Matcher paramMatcher = paramPattern.matcher(expressionConfig);
+            while (paramMatcher.find()){
+                String paramItem = paramMatcher.group(0);
+                if(isDateParam(paramItem)){
+                    String now  = DateTimeFormatter.ofPattern(paramItem).format(LocalDateTime.now());
+                    expressionConfig = expressionConfig.replace("${"+paramItem+"}",now);
 
-            }else {
-                expressionConfig = expressionConfig.replace("${"+paramItem+"}",String.valueOf(param.get(paramItem)));
+                }else {
+                    expressionConfig = expressionConfig.replace("${"+paramItem+"}",String.valueOf(param.get(paramItem)));
+                }
+                paramMatcher = paramPattern.matcher(expressionConfig);
             }
-            paramMatcher = paramPattern.matcher(expressionConfig);
         }
-
 
         Matcher serialMatcher = serialPattern.matcher(expressionConfig);
         if(serialMatcher.find()){
@@ -312,6 +342,35 @@ public class SerialService {
         return numberFormat.format(serial);
     }
 
+    /**
+     * get方式URL拼接
+     *
+     * @param url
+     * @param map
+     * @return
+     */
+    private static String getRequestUrl(String url, Map<String, String> map) {
+        if (map == null || map.size() == 0) {
+            return url;
+        } else {
+            StringBuilder newUrl = new StringBuilder(url);
+            if (url.indexOf("?") == -1) {
+                newUrl.append("?rd=" + Math.random());
+            }
+
+            for (Map.Entry<String, String> item : map.entrySet()) {
+                if (StringUtils.isNotBlank(item.getKey().trim())) {
+                    try {
+                        newUrl.append("&" + item.getKey().trim() + "=" + URLEncoder.encode(item.getValue().trim(), "UTF-8"));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            return newUrl.toString();
+        }
+    }
+
     public static void main(String[] args) {
         String expressiong = "ENV${code}${YYYYMMddHHmmssSSS}#{000000}";
 //        Map<String,String> param = new HashMap<>();
@@ -320,9 +379,5 @@ public class SerialService {
         expressiong = serialService.getNumber("com.changhong.sei.configcenter.entity.TestEntity");
 //        Long num = serialService.getCurrentNumber("ENVHX20200205092108103000003", expressiong);
         System.out.println(expressiong);
-    }
-
-    private String getNumber(String s) {
-        return this.getNumber(s,new HashMap<>());
     }
 }
