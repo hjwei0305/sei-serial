@@ -28,8 +28,8 @@ public class SerialNumberConfigController {
     }
 
     @PostMapping("delete/{id}")
-    public ResultData<?> activatedConfig(@PathVariable("id") String id){
-        serialNumberConfigService.activatedConfig(id);
+    public ResultData<?> delete(@PathVariable("id") String id){
+        serialNumberConfigService.delete(id);
         return ResultData.success(true);
     }
 
