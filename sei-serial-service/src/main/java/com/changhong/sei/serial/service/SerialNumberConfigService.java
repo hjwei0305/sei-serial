@@ -1,12 +1,16 @@
 package com.changhong.sei.serial.service;
 
+import com.changhong.sei.core.context.ContextUtil;
+import com.changhong.sei.core.context.SessionUser;
 import com.changhong.sei.core.dto.ResultData;
 import com.changhong.sei.core.util.JsonUtils;
 import com.changhong.sei.serial.dao.SerialNumberConfigDao;
 import com.changhong.sei.serial.entity.SerialNumberConfig;
 import com.changhong.sei.serial.entity.enumclass.CycleStrategy;
+import com.chonghong.sei.util.thread.ThreadLocalUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -119,9 +123,20 @@ public class SerialNumberConfigService {
      */
     @Transactional
     public SerialNumberConfig save(SerialNumberConfig serialNumberConfig) {
-        SerialNumberConfig entity = dao.save(serialNumberConfig);
-        cacheConfig(entity);
-        return entity;
+        SessionUser user = ContextUtil.getSessionUser();
+        if(StringUtils.isBlank(serialNumberConfig.getId())){
+            serialNumberConfig.setCreateDate(new Date());
+            serialNumberConfig.setEditDate(new Date());
+            serialNumberConfig.setCreateAccount(user.getAccount());
+            serialNumberConfig.setEditAccount(user.getAccount());
+            serialNumberConfig = dao.save(serialNumberConfig);
+        }else {
+            serialNumberConfig.setEditDate(new Date());
+            serialNumberConfig.setEditAccount(user.getAccount());
+            serialNumberConfig = dao.save(serialNumberConfig);
+        }
+        cacheConfig(serialNumberConfig);
+        return serialNumberConfig;
     }
 
     private void cacheConfig(SerialNumberConfig entity) {

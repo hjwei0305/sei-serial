@@ -9,6 +9,7 @@ import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
+import java.util.Date;
 
 /**
  * <strong>实现功能:</strong>
@@ -68,6 +69,21 @@ public class SerialNumberConfig {
     @NotNull
     @Column(nullable = false)
     private boolean activated = Boolean.TRUE;
+
+
+    @Column(name = "create_date")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date createDate;
+
+    @Column(name = "create_account")
+    private String createAccount;
+
+    @Column(name = "edit_date")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date editDate;
+
+    @Column(name = "edit_account")
+    private String editAccount;
 
     public String getId() {
         return id;
@@ -139,5 +155,39 @@ public class SerialNumberConfig {
 
     public void setActivated(boolean activated) {
         this.activated = activated;
+    }
+
+
+    public String getCreateAccount() {
+        return createAccount;
+    }
+
+    public void setCreateAccount(String createAccount) {
+        this.createAccount = createAccount;
+    }
+
+
+    public Date getCreateDate() {
+        return createDate;
+    }
+
+    public void setCreateDate(Date createDate) {
+        this.createDate = createDate;
+    }
+
+    public Date getEditDate() {
+        return editDate;
+    }
+
+    public void setEditDate(Date editDate) {
+        this.editDate = editDate;
+    }
+
+    public String getEditAccount() {
+        return editAccount;
+    }
+
+    public void setEditAccount(String editAccount) {
+        this.editAccount = editAccount;
     }
 }
