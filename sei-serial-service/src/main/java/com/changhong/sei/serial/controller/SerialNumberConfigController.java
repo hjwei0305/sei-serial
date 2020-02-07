@@ -1,7 +1,6 @@
 package com.changhong.sei.serial.controller;
 
 import com.changhong.sei.core.dto.ResultData;
-import com.changhong.sei.serial.api.SerialNumberConfigApi;
 import com.changhong.sei.serial.entity.SerialNumberConfig;
 import com.changhong.sei.serial.service.SerialNumberConfigService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,7 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("serialNumberConfig")
-public class SerialNumberConfigController implements SerialNumberConfigApi {
+public class SerialNumberConfigController {
 
     @Autowired
     private SerialNumberConfigService serialNumberConfigService;
