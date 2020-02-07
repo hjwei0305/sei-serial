@@ -3,16 +3,20 @@ package com.changhong.sei.serial.sdk;
 import com.alibaba.fastjson.JSON;
 import com.changhong.sei.serial.sdk.entity.CycleStrategy;
 import com.changhong.sei.serial.sdk.entity.SerialConfig;
-import com.chonghong.sei.util.OkHttpUtil;
+import com.chonghong.sei.util.thread.ThreadLocalUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 
 import javax.persistence.Table;
 import javax.sql.DataSource;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.lang.annotation.Annotation;
+import java.net.URL;
+import java.net.URLConnection;
+import java.net.URLEncoder;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.NumberFormat;
@@ -34,6 +38,8 @@ public class SerialService {
     private String configAddress;
 
     private static final String serialUri = "/serialNumberConfig/findByClassName";
+
+    private static final String HEADER_TOKEN_KEY = "x-authorization";
 
     private static final String SEI_CONFIG_VALUE_REDIS_KEY = "sei-serial:value:";
 
@@ -65,13 +71,74 @@ public class SerialService {
         Map<String, String> params = new HashMap<>();
         params.put("className", path);
         try {
-            String utils = OkHttpUtil.get(configAddress + serialUri, params);
+            String auth = ThreadLocalUtil.getTranVar(HEADER_TOKEN_KEY);
+            log.info("获取当前登录token为 {}", auth);
+            String utils = httpGetSerialConfig(configAddress + serialUri, params, auth);
             config = JSON.parseObject(utils,SerialConfig.class);
             log.info("获取 {} 的编号规则为 {}",path,config);
         } catch (Exception e) {
             log.error("获取编号配置出错",e);
         }
         return config;
+    }
+
+    private String httpGetSerialConfig(String url, Map<String, String> params, String auth) {
+        StringBuilder result = new StringBuilder();
+        String urlName = getRequestUrl(url,params);
+        log.info("请求给号服务http地址为：{}",urlName);
+        try{
+            URL realUrl = new URL(urlName);
+            //打开和URL之间的连接
+            URLConnection conn = realUrl.openConnection();
+            //设置通用的请求属性
+            conn.setRequestProperty("accept", "*/*");
+            conn.setRequestProperty("connection", "Keep-Alive");
+            conn.setRequestProperty("user-agent",
+                    "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
+            if(StringUtils.isNotBlank(auth)){
+                conn.setRequestProperty(HEADER_TOKEN_KEY,auth);
+            }
+            //建立实际的连接
+            conn.connect();
+            // 定义 BufferedReader输入流来读取URL的响应
+            BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+            String line;
+            while ((line = in.readLine()) != null) {
+                result.append(line);
+            }
+        } catch (Exception e) {
+            log.error("给号服务发送GET请求出现异常", e);
+        }
+        return result.toString();
+    }
+
+    /**
+     * get方式URL拼接
+     *
+     * @param url
+     * @param map
+     * @return
+     */
+    private static String getRequestUrl(String url, Map<String, String> map) {
+        if (map == null || map.size() == 0) {
+            return url;
+        } else {
+            StringBuilder newUrl = new StringBuilder(url);
+            if (url.indexOf("?") == -1) {
+                newUrl.append("?rd=" + Math.random());
+            }
+
+            for (Map.Entry<String, String> item : map.entrySet()) {
+                if (StringUtils.isNotBlank(item.getKey().trim())) {
+                    try {
+                        newUrl.append("&" + item.getKey().trim() + "=" + URLEncoder.encode(item.getValue().trim(), "UTF-8"));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            return newUrl.toString();
+        }
     }
 
     public String getNumber(String classPath,Map<String, String> param){
@@ -249,9 +316,13 @@ public class SerialService {
         String expressiong = "ENV${code}${YYYYMMddHHmmssSSS}#{000000}";
 //        Map<String,String> param = new HashMap<>();
 //        param.put("code","HX");
-        SerialService serialService = new SerialService(null,null,null);
-//        expressiong = serialService.parserExpression(expressiong,3L,param);
-        Long num = serialService.getCurrentNumber("ENVHX20200205092108103000003", expressiong);
+        SerialService serialService = new SerialService("http://127.0.0.1:8080/serial-service",null,null);
+        expressiong = serialService.getNumber("com.changhong.sei.configcenter.entity.TestEntity");
+//        Long num = serialService.getCurrentNumber("ENVHX20200205092108103000003", expressiong);
         System.out.println(expressiong);
+    }
+
+    private String getNumber(String s) {
+        return this.getNumber(s,new HashMap<>());
     }
 }
