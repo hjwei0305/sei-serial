@@ -2,6 +2,7 @@ package com.changhong.sei.serial.controller;
 
 import com.changhong.com.sei.core.test.BaseUnitTest;
 import com.changhong.sei.core.dto.ResultData;
+import com.changhong.sei.core.dto.serach.Search;
 import com.changhong.sei.serial.entity.SerialNumberConfig;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,13 +18,13 @@ public class SerialNumberConfigControllerTest extends BaseUnitTest {
 
     @Test
     public void findAll() {
-        ResultData<List<SerialNumberConfig>> result = serialNumberConfigController.findAll();
-        System.out.println(result);
+//        ResultData<List<SerialNumberConfig>> result = serialNumberConfigController.findAll(new Search());
+//        System.out.println(result);
     }
 
     @Test
     public void findByClassName() {
-        SerialNumberConfig result = serialNumberConfigController.findByClassName("com.changhong.sei.configcenter.entity.TestEntity");
+        SerialNumberConfig result = serialNumberConfigController.findByClassName("com.changhong.sei.configcenter.entity.TestEntity",null);
         System.out.println(result.getCurrentSerial());
     }
 }
