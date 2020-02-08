@@ -24,7 +24,7 @@ import java.util.Date;
 @DynamicInsert
 @DynamicUpdate
 @GenericGenerator(name = "jpa-uuid",strategy = "uuid")
-public class SerialNumberConfig {
+public class SerialNumberConfig extends BaseEntity {
 
     @Id
     @GeneratedValue(generator = "jpa-uuid")
@@ -34,6 +34,12 @@ public class SerialNumberConfig {
      */
     @Column(name = "entity_class_name", length = 128, nullable = false)
     private String entityClassName;
+
+    /**
+     * 隔离码
+     */
+    @Column(name = "isolation_code", length = 32, nullable = false)
+    private String isolationCode;
     /**
      * 实体名称
      */
@@ -99,6 +105,14 @@ public class SerialNumberConfig {
 
     public void setEntityClassName(String entityClassName) {
         this.entityClassName = entityClassName;
+    }
+
+    public String getIsolationCode() {
+        return isolationCode;
+    }
+
+    public void setIsolationCode(String isolationCode) {
+        this.isolationCode = isolationCode;
     }
 
     public String getName() {

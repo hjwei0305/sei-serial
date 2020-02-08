@@ -89,7 +89,20 @@ public class SerialService {
      * @return
      */
     public String getNumber(String classPath) {
-        return this.getNumber(classPath,null);
+        return this.getNumber(classPath,null,null);
+    }
+
+    /**
+     * 通过类地址获+隔离码取编号
+     * @param classPath
+     * @return
+     */
+    public String getNumber(String classPath,String isolationCode) {
+        return this.getNumber(classPath,null,isolationCode);
+    }
+
+    public String getNumber(String classPath,Map<String, String> param,String isolationCode){
+        return this.getNumber(classPath,param,null,isolationCode);
     }
 
     /**
@@ -99,7 +112,7 @@ public class SerialService {
      * @return
      */
     public String getNumber(String classPath,Map<String, String> param){
-       return this.getNumber(classPath,param,null);
+       return this.getNumber(classPath,param,null,null);
     }
 
     /***
@@ -109,8 +122,8 @@ public class SerialService {
      * @param tableName
      * @return
      */
-    public String getNumber(String classPath,Map<String, String> param, String tableName){
-        SerialConfig config = getSerialConfig(classPath);
+    public String getNumber(String classPath,Map<String, String> param, String tableName,String isolationCode){
+        SerialConfig config = getSerialConfig(classPath,isolationCode);
         if(Objects.isNull(config)){
             log.error("未获取到相应class【{}】的配置",classPath);
             return null;
@@ -130,7 +143,21 @@ public class SerialService {
      * @return
      */
     public String getNumber(Class clz){
-        return this.getNumber(clz,null);
+        return this.getNumber(clz,null, null);
+    }
+
+    /**
+     * 通过实体类获取标号
+     * @param clz
+     * @return
+     */
+    public String getNumber(Class clz, String isolationCode){
+        return this.getNumber(clz,null, isolationCode);
+    }
+
+
+    public String getNumber(Class clz, Map<String, String> param) {
+        return getNumber(clz ,param, null);
     }
 
     /***
@@ -139,7 +166,7 @@ public class SerialService {
      * @param param
      * @return
      */
-    public String getNumber(Class clz, Map<String, String> param) {
+    public String getNumber(Class clz, Map<String, String> param,String isolationCode) {
         String path = clz.getName();
         Annotation[] annotations = clz.getAnnotations();
         String tableName = "";
@@ -149,13 +176,14 @@ public class SerialService {
                 tableName = ((Table) currentAnnotation).name();
             }
         }
-        return getNumber(path ,param, tableName);
+        return getNumber(path ,param, tableName,isolationCode);
     }
 
-    private SerialConfig getSerialConfig(String path) {
+    private SerialConfig getSerialConfig(String path, String isolationCode) {
         SerialConfig config = null;
         Map<String, String> params = new HashMap<>();
         params.put("className", path);
+        params.put("isolationCode",isolationCode);
         try {
             String auth = ThreadLocalUtil.getTranVar(HEADER_TOKEN_KEY);
             log.info("获取当前登录token为 {}", auth);
@@ -354,16 +382,22 @@ public class SerialService {
             return url;
         } else {
             StringBuilder newUrl = new StringBuilder(url);
-            if (url.indexOf("?") == -1) {
-                newUrl.append("?rd=" + Math.random());
+            if (!url.contains("?")) {
+                newUrl.append("?rd=");
+                newUrl.append(Math.random());
             }
 
             for (Map.Entry<String, String> item : map.entrySet()) {
                 if (StringUtils.isNotBlank(item.getKey().trim())) {
                     try {
-                        newUrl.append("&" + item.getKey().trim() + "=" + URLEncoder.encode(item.getValue().trim(), "UTF-8"));
+                        if(StringUtils.isNotBlank(item.getValue())){
+                            newUrl.append("&");
+                            newUrl.append(item.getKey().trim());
+                            newUrl.append("=");
+                            newUrl.append(URLEncoder.encode(item.getValue().trim(), "UTF-8"));
+                        }
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        log.error("生成给号配置请求url出错",e);
                     }
                 }
             }
@@ -376,8 +410,10 @@ public class SerialService {
 //        Map<String,String> param = new HashMap<>();
 //        param.put("code","HX");
         SerialService serialService = new SerialService("http://127.0.0.1:8080/serial-service",null,null);
-        expressiong = serialService.getNumber("com.changhong.sei.configcenter.entity.TestEntity");
+        long sta = System.currentTimeMillis();
+        expressiong = serialService.getNumber("com.changhong.sei.configcenter.entity.TestEntity","10044");
 //        Long num = serialService.getCurrentNumber("ENVHX20200205092108103000003", expressiong);
         System.out.println(expressiong);
+        System.out.println(System.currentTimeMillis()-sta);
     }
 }

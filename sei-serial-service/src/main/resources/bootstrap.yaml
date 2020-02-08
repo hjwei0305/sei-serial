@@ -50,6 +50,12 @@ management:
         include:
         - "*"
 sei:
+  mq:
+    topic: serial-serivce-gen-message
+    group-id: serial
+  http:
+    filter:
+      enable: false
   mock: # 本地调试的当前用户配置
     user:
       s-id: 123456

@@ -1,7 +1,7 @@
 package com.changhong.sei.serial.dao;
 
+import com.changhong.sei.core.dao.BaseEntityDao;
 import com.changhong.sei.serial.entity.SerialNumberConfig;
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,9 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
  * @version 1.0.1 2017-10-20 9:41
  */
 @Repository
-public interface SerialNumberConfigDao extends JpaRepository<SerialNumberConfig, String> {
+public interface SerialNumberConfigDao extends BaseEntityDao<SerialNumberConfig> {
 
-    SerialNumberConfig findByEntityClassName(String className);
+    SerialNumberConfig findByEntityClassNameAndIsolationCode(String name, String className);
 
     @Modifying
     @Transactional

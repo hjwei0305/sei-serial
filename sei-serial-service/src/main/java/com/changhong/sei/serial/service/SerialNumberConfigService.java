@@ -2,12 +2,15 @@ package com.changhong.sei.serial.service;
 
 import com.changhong.sei.core.context.ContextUtil;
 import com.changhong.sei.core.context.SessionUser;
+import com.changhong.sei.core.dao.BaseEntityDao;
 import com.changhong.sei.core.dto.ResultData;
+import com.changhong.sei.core.mq.MqProducer;
+import com.changhong.sei.core.service.BaseEntityService;
+import com.changhong.sei.core.service.bo.OperateResultWithData;
 import com.changhong.sei.core.util.JsonUtils;
 import com.changhong.sei.serial.dao.SerialNumberConfigDao;
 import com.changhong.sei.serial.entity.SerialNumberConfig;
 import com.changhong.sei.serial.entity.enumclass.CycleStrategy;
-import com.chonghong.sei.util.thread.ThreadLocalUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.apache.commons.lang3.StringUtils;
@@ -29,15 +32,17 @@ import java.util.concurrent.TimeUnit;
  * <strong>实现功能:</strong>
  * <p>编号生成器配置服务逻辑实现</p>
  *
- * @author 王锦光 wangj
- * @version 1.0.1 2017-10-24 20:28
+ * @author  刘松林
+ * @version
  */
 @Service
 @Api("SerialNumberConfigService")
-public class SerialNumberConfigService {
+public class SerialNumberConfigService extends BaseEntityService<SerialNumberConfig> {
     private final Logger log = LoggerFactory.getLogger(SerialNumberConfigService.class);
 
     private static final String SEI_SERIAL_CONFIG_REDIS_KEY= "sei-serial:config:";
+
+    private static final String DEFAULT_ISOLATION_CODE= "DEFAULT";
 
     private static final String SEI_SERIAL_VALUE_REDIS_KEY = "sei-serial:value:";
 
@@ -45,16 +50,12 @@ public class SerialNumberConfigService {
     private StringRedisTemplate stringRedisTemplate;
     @Autowired
     private SerialNumberConfigDao dao;
+    @Autowired
+    private MqProducer mqProducer;
 
-
-    /**
-     * 通过Id获取实体
-     *
-     * @return 编号生成器配置
-     */
-    @ApiOperation("获取编号生成器配置")
-    public List<SerialNumberConfig> findAll() {
-        return dao.findAll();
+    @Override
+    protected BaseEntityDao<SerialNumberConfig> getDao() {
+        return dao;
     }
 
     /**
@@ -64,11 +65,14 @@ public class SerialNumberConfigService {
      * @return 编号生成器配置
      */
     @ApiOperation("通过Id获取编号生成器配置")
-    public SerialNumberConfig findByClassName(String className) {
-        String currentKey = SEI_SERIAL_CONFIG_REDIS_KEY + className;
+    public SerialNumberConfig findByClassName(String className, String isolationCode) {
+        if(StringUtils.isBlank(isolationCode)){
+            isolationCode = DEFAULT_ISOLATION_CODE;
+        }
+        String currentKey = SEI_SERIAL_CONFIG_REDIS_KEY + className+":"+isolationCode;
         SerialNumberConfig entity = JsonUtils.fromJson(stringRedisTemplate.opsForValue().get(currentKey),SerialNumberConfig.class);
         if (Objects.isNull(entity)) {
-            entity = dao.findByEntityClassName(className);
+            entity = dao.findByEntityClassNameAndIsolationCode(className,isolationCode);
             if(Objects.nonNull(entity)){
                 cacheConfig(entity);
             }
@@ -87,12 +91,13 @@ public class SerialNumberConfigService {
                     currentNumber = stringRedisTemplate.opsForValue().increment(currentValueKey);
                 }
             }
-            log.info("{} 获取到当前的序列号是 {}",className ,currentNumber);
             if(currentNumber != entity.getCurrentSerial()){
-                dao.updateCurrentSerial(entity.getId(),currentNumber);
                 entity.setCurrentSerial(currentNumber);
+                String json = JsonUtils.toJson(entity);
                 cacheConfig(entity);
+                mqProducer.send(json);
             }
+            log.info("{} 获取到当前的序列号是 {}",className ,currentNumber);
         }
         return entity;
     }
@@ -122,36 +127,26 @@ public class SerialNumberConfigService {
      * @return 操作结果
      */
     @Transactional
-    public SerialNumberConfig save(SerialNumberConfig serialNumberConfig) {
+    public OperateResultWithData<SerialNumberConfig> save(SerialNumberConfig serialNumberConfig) {
+        OperateResultWithData<SerialNumberConfig> result;
         SessionUser user = ContextUtil.getSessionUser();
         if(StringUtils.isBlank(serialNumberConfig.getId())){
             serialNumberConfig.setCreateDate(new Date());
             serialNumberConfig.setEditDate(new Date());
             serialNumberConfig.setCreateAccount(user.getAccount());
             serialNumberConfig.setEditAccount(user.getAccount());
-            serialNumberConfig = dao.save(serialNumberConfig);
+             result = super.save(serialNumberConfig);
         }else {
             serialNumberConfig.setEditDate(new Date());
             serialNumberConfig.setEditAccount(user.getAccount());
-            serialNumberConfig = dao.save(serialNumberConfig);
+            result = super.save(serialNumberConfig);
         }
         cacheConfig(serialNumberConfig);
-        return serialNumberConfig;
+        return result;
     }
 
     private void cacheConfig(SerialNumberConfig entity) {
         stringRedisTemplate.opsForValue().set(SEI_SERIAL_CONFIG_REDIS_KEY + entity.getEntityClassName(),JsonUtils.toJson(entity));
-    }
-
-    /**
-     * 删除一个编号生成器配置
-     *
-     * @param id 编号生成器配置Id
-     * @return 操作结果
-     */
-    @ApiOperation("删除一个编号生成器配置")
-    public void delete(String id) {
-        dao.deleteById(id);
     }
 
     /**
@@ -201,6 +196,4 @@ public class SerialNumberConfigService {
                     return dao.save(c);
                 });
     }
-
-
 }

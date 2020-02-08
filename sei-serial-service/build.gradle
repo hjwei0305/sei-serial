@@ -12,6 +12,7 @@ dependencies {
     compile(
             "mysql:mysql-connector-java:$mysqlVersion",
             "com.changhong.sei:sei-service-starter:$sei_version",
+            "com.changhong.sei:sei-mq-starter:$sei_version",
     )
 
     testCompile(
