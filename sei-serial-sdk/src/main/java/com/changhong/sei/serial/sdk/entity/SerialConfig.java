@@ -7,6 +7,11 @@ public class SerialConfig {
      * 实体类名（全名）
      */
     private String entityClassName;
+
+    /***
+     * 隔离码
+     */
+    private String isolationCode;
     /**
      * 实体名称
      */
@@ -39,6 +44,14 @@ public class SerialConfig {
 
     public void setEntityClassName(String entityClassName) {
         this.entityClassName = entityClassName;
+    }
+
+    public String getIsolationCode() {
+        return isolationCode;
+    }
+
+    public void setIsolationCode(String isolationCode) {
+        this.isolationCode = isolationCode;
     }
 
     public String getName() {

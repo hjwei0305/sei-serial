@@ -43,6 +43,8 @@ public class SerialService {
 
     private static final String SEI_CONFIG_VALUE_REDIS_KEY = "sei-serial:value:";
 
+    private static final String DEFAULT_ISOLATION_CODE= "";
+
     private static final Pattern paramPattern = Pattern.compile("(?<=\\$\\{).*?(?=})");
 
     private static final Pattern serialPattern = Pattern.compile("(?<=#\\{).*?(?=})");
@@ -227,7 +229,10 @@ public class SerialService {
     }
 
     private Long getNextNumber(String path, String tableName,SerialConfig config) {
-        String currentKey = SEI_CONFIG_VALUE_REDIS_KEY+path;
+        if(StringUtils.isBlank(config.getIsolationCode())){
+            config.setIsolationCode(DEFAULT_ISOLATION_CODE);
+        }
+        String currentKey = SEI_CONFIG_VALUE_REDIS_KEY+path+":"+config.getIsolationCode();
         Long currentNumber = 0L;
         if(Objects.isNull(redisTemplate)){
             Long dbCurrent = getMaxNumberFormDB(tableName,config.getExpressionConfig());
@@ -340,7 +345,8 @@ public class SerialService {
             if(config.getCycleStrategy() == CycleStrategy.MAX_CYCLE && String.valueOf(currentSerial).length()>serialItem.length()){
                 currentSerial=1L;
                 if(Objects.nonNull(redisTemplate)){
-                    redisTemplate.opsForValue().set(SEI_CONFIG_VALUE_REDIS_KEY+config.getEntityClassName(), currentSerial);
+                    String currentKey = SEI_CONFIG_VALUE_REDIS_KEY+config.getEntityClassName()+":"+config.getIsolationCode();
+                    redisTemplate.opsForValue().set(currentKey, currentSerial);
                 }
             }
             expressionConfig = expressionConfig.replace("#{"+serialItem+"}",addZeroForNumber(currentSerial,serialItem.length()));
@@ -411,7 +417,7 @@ public class SerialService {
 //        param.put("code","HX");
         SerialService serialService = new SerialService("http://127.0.0.1:8080/serial-service",null,null);
         long sta = System.currentTimeMillis();
-        expressiong = serialService.getNumber("com.changhong.sei.configcenter.entity.TestEntity","10044");
+        expressiong = serialService.getNumber("com.changhong.sei.configcenter.entity.TestEntity");
 //        Long num = serialService.getCurrentNumber("ENVHX20200205092108103000003", expressiong);
         System.out.println(expressiong);
         System.out.println(System.currentTimeMillis()-sta);
