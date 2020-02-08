@@ -23,12 +23,7 @@ import java.util.Date;
 @Table(name = "serial_number_config")
 @DynamicInsert
 @DynamicUpdate
-@GenericGenerator(name = "jpa-uuid",strategy = "uuid")
 public class SerialNumberConfig extends BaseEntity {
-
-    @Id
-    @GeneratedValue(generator = "jpa-uuid")
-    private String id;
     /**
      * 实体类名（全名）
      */
