@@ -33,10 +33,10 @@ public class SerialServiceAutoConfig {
 
     @Bean
     @ConditionalOnMissingBean
-    @ConditionalOnClass({RedisTemplate.class,DataSource.class})
-    @ConditionalOnBean({RedisTemplate.class, DataSource.class})
-    public SerialService serialService(SerialServiceProperty serialServiceProperty,RedisTemplate redisTemplate,DataSource dataSource){
-        return new SerialService(serialServiceProperty.getUrl(),redisTemplate,dataSource);
+    @ConditionalOnClass({StringRedisTemplate.class,DataSource.class})
+    @ConditionalOnBean({StringRedisTemplate.class, DataSource.class})
+    public SerialService serialService(SerialServiceProperty serialServiceProperty,StringRedisTemplate stringRedisTemplate,DataSource dataSource){
+        return new SerialService(serialServiceProperty.getUrl(),stringRedisTemplate,dataSource);
     }
 
     @Bean

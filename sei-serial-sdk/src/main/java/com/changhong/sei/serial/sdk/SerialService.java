@@ -7,7 +7,7 @@ import com.chonghong.sei.util.thread.ThreadLocalUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 
 import javax.persistence.Table;
 import javax.sql.DataSource;
@@ -49,7 +49,7 @@ public class SerialService {
 
     private static final Pattern serialPattern = Pattern.compile("(?<=#\\{).*?(?=})");
 
-    private RedisTemplate<String,Long> redisTemplate;
+    private StringRedisTemplate stringRedisTemplate;
 
     private DataSource dataSource;
 
@@ -65,12 +65,12 @@ public class SerialService {
      * 依赖数据库
      *
      * @param configAddress
-     * @param redisTemplate
+     * @param stringRedisTemplate
      * @param dataSource
      */
-    public SerialService(String configAddress,RedisTemplate redisTemplate,DataSource dataSource) {
+    public SerialService(String configAddress,StringRedisTemplate stringRedisTemplate,DataSource dataSource) {
         this.configAddress = configAddress;
-        this.redisTemplate = redisTemplate;
+        this.stringRedisTemplate = stringRedisTemplate;
         this.dataSource = dataSource;
     }
 
@@ -234,7 +234,7 @@ public class SerialService {
         }
         String currentKey = SEI_CONFIG_VALUE_REDIS_KEY+path+":"+config.getIsolationCode();
         Long currentNumber = 0L;
-        if(Objects.isNull(redisTemplate)){
+        if(Objects.isNull(stringRedisTemplate)){
             Long dbCurrent = getMaxNumberFormDB(tableName,config.getExpressionConfig());
             if(Objects.isNull(dbCurrent)){
                 return config.getInitialSerial();
@@ -242,8 +242,8 @@ public class SerialService {
                 return dbCurrent+1;
             }
         }
-        if(Boolean.TRUE.equals(redisTemplate.hasKey(currentKey))){
-            currentNumber = redisTemplate.opsForValue().increment(currentKey);
+        if(Boolean.TRUE.equals(stringRedisTemplate.hasKey(currentKey))){
+            currentNumber = stringRedisTemplate.opsForValue().increment(currentKey);
         }else {
             Long dbCurrent = getMaxNumberFormDB(tableName,config.getExpressionConfig());
             // 防止多线程重复获取
@@ -253,8 +253,8 @@ public class SerialService {
             }else {
                 currentNumber = config.getCurrentSerial();
             }
-            if(Boolean.FALSE.equals(redisTemplate.opsForValue().setIfAbsent(currentKey,currentNumber,expire,TimeUnit.MILLISECONDS))){
-                currentNumber = redisTemplate.opsForValue().increment(currentKey);
+            if(Boolean.FALSE.equals(stringRedisTemplate.opsForValue().setIfAbsent(currentKey,currentNumber.toString(),expire,TimeUnit.MILLISECONDS))){
+                currentNumber = stringRedisTemplate.opsForValue().increment(currentKey);
             }
         }
         return currentNumber;
@@ -344,9 +344,9 @@ public class SerialService {
             String serialItem = serialMatcher.group(0);
             if(config.getCycleStrategy() == CycleStrategy.MAX_CYCLE && String.valueOf(currentSerial).length()>serialItem.length()){
                 currentSerial=1L;
-                if(Objects.nonNull(redisTemplate)){
+                if(Objects.nonNull(stringRedisTemplate)){
                     String currentKey = SEI_CONFIG_VALUE_REDIS_KEY+config.getEntityClassName()+":"+config.getIsolationCode();
-                    redisTemplate.opsForValue().set(currentKey, currentSerial);
+                    stringRedisTemplate.opsForValue().set(currentKey, currentSerial.toString());
                 }
             }
             expressionConfig = expressionConfig.replace("#{"+serialItem+"}",addZeroForNumber(currentSerial,serialItem.length()));
