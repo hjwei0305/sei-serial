@@ -1,8 +1,10 @@
 package com.changhong.sei.serial.controller;
 
+import com.changhong.sei.core.controller.DefaultBaseEntityController;
 import com.changhong.sei.core.dto.ResultData;
 import com.changhong.sei.core.dto.serach.PageResult;
 import com.changhong.sei.core.dto.serach.Search;
+import com.changhong.sei.core.service.BaseEntityService;
 import com.changhong.sei.core.service.bo.OperateResultWithData;
 import com.changhong.sei.serial.entity.SerialNumberConfig;
 import com.changhong.sei.serial.service.SerialNumberConfigService;
@@ -38,5 +40,4 @@ public class SerialNumberConfigController {
     public SerialNumberConfig findByClassName(@RequestParam String className,String isolationCode){
         return serialNumberConfigService.findByClassName(className,isolationCode);
     }
-
 }
