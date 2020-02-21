@@ -35,7 +35,7 @@ public class SerialUtils {
 
     private static final Logger log = LoggerFactory.getLogger(SerialUtils.class);
 
-    private static final String SERIAL_URI = "/serialNumberConfig/findByClassNameAndType";
+    private static final String SERIAL_URI = "/serialNumberConfig/findByClassName";
 
     private static final String BARCODE_URI = "/serialNumberConfig/genAndSaveAssociate";
 
