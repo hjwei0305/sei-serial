@@ -10,9 +10,11 @@ dependencyManagement {
 dependencies {
 
     compile project(":sei-serial-sdk")
+    compile project(":sei-serial-api")
 
     compile(
             "mysql:mysql-connector-java:$mysqlVersion",
+            "org.modelmapper:modelmapper:$modelmapper_version",
             "com.changhong.sei:sei-service-starter:$sei_version",
             "com.changhong.sei:sei-mq-starter:$sei_version",
     )

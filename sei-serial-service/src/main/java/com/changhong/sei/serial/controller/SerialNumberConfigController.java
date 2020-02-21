@@ -5,21 +5,27 @@ import com.changhong.sei.core.dto.serach.PageResult;
 import com.changhong.sei.core.dto.serach.Search;
 import com.changhong.sei.core.dto.serach.SearchFilter;
 import com.changhong.sei.core.service.bo.OperateResultWithData;
+import com.changhong.sei.serial.api.SerialNumberConfigApi;
+import com.changhong.sei.serial.dao.BarCodeAssociateDao;
+import com.changhong.sei.serial.dto.BarCodeAssociateDto;
 import com.changhong.sei.serial.entity.BarCodeAssociate;
 import com.changhong.sei.serial.entity.SerialNumberConfig;
 import com.changhong.sei.serial.entity.dto.BarCodeDto;
 import com.changhong.sei.serial.entity.enumclass.ConfigType;
-import com.changhong.sei.serial.sdk.BarCodeService;
 import com.changhong.sei.serial.service.BarCodeAssociateService;
 import com.changhong.sei.serial.service.SerialNumberConfigService;
+import io.swagger.annotations.Api;
+import org.modelmapper.ModelMapper;
+import org.modelmapper.TypeToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
+@Api(value = "SerialNumberConfigApi", tags = "barCode查询api")
 @RequestMapping("serialNumberConfig")
-public class SerialNumberConfigController {
+public class SerialNumberConfigController implements SerialNumberConfigApi {
 
     @Autowired
     private SerialNumberConfigService serialNumberConfigService;
@@ -56,25 +62,30 @@ public class SerialNumberConfigController {
     }
 
     @GetMapping("getReferenceIdByBarCode")
-    public ResultData<BarCodeAssociate> getReferenceIdByBarCode(@RequestParam String barCode){
+    public ResultData<BarCodeAssociateDto> getReferenceIdByBarCode(@RequestParam String barCode){
         BarCodeAssociate barCodeAssociate = barCodeAssociateService.findByProperty("barCode",barCode);
-        return ResultData.success(barCodeAssociate);
+        ModelMapper modelMapper = new ModelMapper();
+        return ResultData.success(modelMapper.map(barCodeAssociate,BarCodeAssociateDto.class));
     }
 
     @GetMapping("getBarCodeListByReferenceId")
-    public ResultData<List<BarCodeAssociate>> getBarCodeListByReferenceId(@RequestParam String referenceId){
+    public ResultData<List<BarCodeAssociateDto>> getBarCodeListByReferenceId(@RequestParam String referenceId){
         List<BarCodeAssociate> barCodeAssociates = barCodeAssociateService.findListByProperty("referenceId",referenceId);
-        return ResultData.success(barCodeAssociates);
+        ModelMapper modelMapper = new ModelMapper();
+        return ResultData.success(modelMapper.map(barCodeAssociates,new TypeToken<List<BarCodeAssociateDto>>() {
+        }.getType()));
     }
 
-    @GetMapping("getReferenceIdsByListBarCode")
-    public ResultData<List<BarCodeAssociate>> getReferenceIdsByListBarCode(@RequestBody List<String> barCodes){
+    @PostMapping("getReferenceIdsByListBarCode")
+    public ResultData<List<BarCodeAssociateDto>> getReferenceIdsByListBarCode(@RequestBody List<String> barCodes){
         SearchFilter searchFilter = new SearchFilter();
         searchFilter.setFieldName("barCode");
         searchFilter.setOperator(SearchFilter.Operator.IN);
         searchFilter.setValue(barCodes);
         List<BarCodeAssociate> barCodeAssociates = barCodeAssociateService.findByFilter(searchFilter);
-        return ResultData.success(barCodeAssociates);
+        ModelMapper modelMapper = new ModelMapper();
+        return ResultData.success(modelMapper.map(barCodeAssociates,new TypeToken<List<BarCodeAssociateDto>>() {
+        }.getType()));
     }
 
 
