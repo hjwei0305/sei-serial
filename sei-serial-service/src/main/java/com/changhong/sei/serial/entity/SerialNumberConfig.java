@@ -20,7 +20,7 @@ import javax.validation.constraints.NotNull;
  */
 @Access(AccessType.FIELD)
 @Entity
-@Table(name = "serial_number_config_temp")
+@Table(name = "serial_number_config")
 @DynamicInsert
 @DynamicUpdate
 public class SerialNumberConfig extends BaseAuditableEntity implements ITenant {
