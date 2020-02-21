@@ -81,7 +81,7 @@ public class SerialUtils {
                 result.append(line);
             }
         } catch (Exception e) {
-            log.error("给号服务发送GET请求出现异常", e);
+            log.error("给号服务发送请求出现异常", e);
         }
         return result.toString();
     }
