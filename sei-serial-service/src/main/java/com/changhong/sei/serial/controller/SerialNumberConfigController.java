@@ -1,13 +1,14 @@
 package com.changhong.sei.serial.controller;
 
-import com.changhong.sei.core.controller.DefaultBaseEntityController;
 import com.changhong.sei.core.dto.ResultData;
 import com.changhong.sei.core.dto.serach.PageResult;
 import com.changhong.sei.core.dto.serach.Search;
-import com.changhong.sei.core.service.BaseEntityService;
 import com.changhong.sei.core.service.bo.OperateResultWithData;
 import com.changhong.sei.serial.entity.SerialNumberConfig;
+import com.changhong.sei.serial.entity.dto.BarCodeDto;
+import com.changhong.sei.serial.entity.enumclass.ConfigType;
 import com.changhong.sei.serial.service.SerialNumberConfigService;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,7 +38,12 @@ public class SerialNumberConfigController {
     }
 
     @GetMapping("findByClassName")
-    public SerialNumberConfig findByClassName(@RequestParam String className,String isolationCode){
-        return serialNumberConfigService.findByClassName(className,isolationCode);
+    public SerialNumberConfig findByClassName(@RequestParam String className){
+        return serialNumberConfigService.findByClassNameAndConfigType(className, ConfigType.CODE_TYPE);
+    }
+
+    @PostMapping("genAndSaveAssociate")
+    public String genNumberAndSaveAssociate(@RequestBody BarCodeDto barCodeDto){
+      return serialNumberConfigService.genNumberAndSaveAssociate(barCodeDto);
     }
 }

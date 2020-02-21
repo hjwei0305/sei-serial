@@ -23,9 +23,6 @@ public class SerialConsumer extends MqConsumer {
         if(StringUtils.isBlank(message)){
             return;
         }
-        if(log.isDebugEnabled()){
-            log.debug("接收到的消息为：{}",message);
-        }
         SerialNumberConfig entity = JsonUtils.fromJson(message, SerialNumberConfig.class);
         dao.updateCurrentSerial(entity.getId(),entity.getCurrentSerial());
     }

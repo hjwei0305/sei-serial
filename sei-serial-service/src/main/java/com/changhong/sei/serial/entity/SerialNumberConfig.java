@@ -1,15 +1,15 @@
 package com.changhong.sei.serial.entity;
 
 
-import com.changhong.sei.core.entity.BaseEntity;
+import com.changhong.sei.core.entity.BaseAuditableEntity;
+import com.changhong.sei.core.entity.ITenant;
+import com.changhong.sei.serial.entity.enumclass.ConfigType;
 import com.changhong.sei.serial.entity.enumclass.CycleStrategy;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
-import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
-import java.util.Date;
 
 /**
  * <strong>实现功能:</strong>
@@ -20,10 +20,10 @@ import java.util.Date;
  */
 @Access(AccessType.FIELD)
 @Entity
-@Table(name = "serial_number_config")
+@Table(name = "serial_number_config_temp")
 @DynamicInsert
 @DynamicUpdate
-public class SerialNumberConfig extends BaseEntity {
+public class SerialNumberConfig extends BaseAuditableEntity implements ITenant {
     /**
      * 实体类名（全名）
      */
@@ -31,17 +31,18 @@ public class SerialNumberConfig extends BaseEntity {
     private String entityClassName;
 
     /**
-     * 隔离码
+     * 编号类型
      */
-    @Column(name = "isolation_code", length = 32, nullable = false)
-    private String isolationCode;
+    @Column(name = "config_type", length = 32, nullable = false)
+    @Enumerated(EnumType.STRING)
+    private ConfigType configType = ConfigType.CODE_TYPE;
     /**
      * 实体名称
      */
     @Column(name = "name", length = 32, nullable = false)
     private String name;
     /**
-     * 编号前缀
+     * 编号表达式
      */
     @Column(name = "expression_config", length = 32)
     private String expressionConfig;
@@ -71,20 +72,8 @@ public class SerialNumberConfig extends BaseEntity {
     @Column(nullable = false)
     private boolean activated = Boolean.TRUE;
 
-
-    @Column(name = "create_date")
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date createDate;
-
-    @Column(name = "create_account")
-    private String createAccount;
-
-    @Column(name = "edit_date")
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date editDate;
-
-    @Column(name = "edit_account")
-    private String editAccount;
+    @Column(name = "tenant_code")
+    private String tenantCode;
 
     public String getId() {
         return id;
@@ -102,12 +91,12 @@ public class SerialNumberConfig extends BaseEntity {
         this.entityClassName = entityClassName;
     }
 
-    public String getIsolationCode() {
-        return isolationCode;
+    public ConfigType getConfigType() {
+        return configType;
     }
 
-    public void setIsolationCode(String isolationCode) {
-        this.isolationCode = isolationCode;
+    public void setConfigType(ConfigType configType) {
+        this.configType = configType;
     }
 
     public String getName() {
@@ -167,36 +156,29 @@ public class SerialNumberConfig extends BaseEntity {
     }
 
 
-    public String getCreateAccount() {
-        return createAccount;
+    @Override
+    public String getTenantCode() {
+        return this.tenantCode;
     }
 
-    public void setCreateAccount(String createAccount) {
-        this.createAccount = createAccount;
+    @Override
+    public void setTenantCode(String tenantCode) {
+        this.tenantCode = tenantCode;
     }
 
-
-    public Date getCreateDate() {
-        return createDate;
-    }
-
-    public void setCreateDate(Date createDate) {
-        this.createDate = createDate;
-    }
-
-    public Date getEditDate() {
-        return editDate;
-    }
-
-    public void setEditDate(Date editDate) {
-        this.editDate = editDate;
-    }
-
-    public String getEditAccount() {
-        return editAccount;
-    }
-
-    public void setEditAccount(String editAccount) {
-        this.editAccount = editAccount;
+    @Override
+    public String toString() {
+        return "SerialNumberConfig{" +
+                "entityClassName='" + entityClassName + '\'' +
+                ", configType=" + configType +
+                ", name='" + name + '\'' +
+                ", expressionConfig='" + expressionConfig + '\'' +
+                ", initialSerial=" + initialSerial +
+                ", currentSerial=" + currentSerial +
+                ", genFlag=" + genFlag +
+                ", cycleStrategy=" + cycleStrategy +
+                ", activated=" + activated +
+                ", tenantCode='" + tenantCode + '\'' +
+                '}';
     }
 }

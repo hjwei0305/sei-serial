@@ -1,7 +1,5 @@
 package com.changhong.sei.serial.sdk.entity;
 
-import com.changhong.sei.serial.sdk.entity.CycleStrategy;
-
 public class SerialConfig {
     /**
      * 实体类名（全名）
@@ -9,9 +7,14 @@ public class SerialConfig {
     private String entityClassName;
 
     /***
-     * 隔离码
+     * 租户代码
      */
-    private String isolationCode;
+    private String tenantCode;
+
+    /**
+     * 编号类型
+     */
+    private ConfigType configType = ConfigType.CODE_TYPE;
     /**
      * 实体名称
      */
@@ -46,12 +49,20 @@ public class SerialConfig {
         this.entityClassName = entityClassName;
     }
 
-    public String getIsolationCode() {
-        return isolationCode;
+    public String getTenantCode() {
+        return tenantCode;
     }
 
-    public void setIsolationCode(String isolationCode) {
-        this.isolationCode = isolationCode;
+    public void setTenantCode(String tenantCode) {
+        this.tenantCode = tenantCode;
+    }
+
+    public ConfigType getConfigType() {
+        return configType;
+    }
+
+    public void setConfigType(ConfigType configType) {
+        this.configType = configType;
     }
 
     public String getName() {
