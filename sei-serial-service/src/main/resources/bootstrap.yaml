@@ -1,46 +1,19 @@
 spring:
-  cloud:
-    config:
-      profile: DEV
-    zookeeper:
-      connect-string: 10.4.208.132:2181
-      enabled: 'true'
   application:
     name: sei-serial
-  datasource:
-    password: '123456'
-    driver-class-name: com.mysql.jdbc.Driver
-    url: jdbc:mysql://10.4.208.134:3306/sei_serial?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
-    username: sei
-  kafka:
-    bootstrap-servers: 10.4.208.131:9092
-  jpa:
-    hibernate:
-      ddl-auto: none
-      properties:
-        hibernate:
-          dialect: org.hibernate.dialect.MySQL5Dialect
-      namingStrategy: org.hibernate.cfg.ImprovedNamingStrategy
-    show-sql: true
-  redis:
-    password: ZmkDbgaua3Rso33T
-    port: '6379'
-    host: 10.4.208.132
-application:
-  name: sei-serial
-  version: 6.0.0
-
+  cloud:
+    config:
+      uri: http://10.4.208.86:8100/config-center
+      profile: DEV
+      name: ${spring.application.name}
 sei:
   mock: # 本地调试的当前用户配置
     user:
-      tenant-code: 10044
+      s-id: 123456
+      user-id: 1234
       account: admin
-  mq:
-    group-id: serial
-    topic: serial-serivce-gen-message
-  http:
-    filter:
-      enable: false
-server:
-  servlet:
-    context-path: /serial-service
+      user-name: 管理员
+      tenant-code: 10044
+      email: test.sei.com
+      ip: 127.0.0.1
+      locale: zh_CN

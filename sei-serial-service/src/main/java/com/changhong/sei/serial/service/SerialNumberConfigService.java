@@ -76,8 +76,7 @@ public class SerialNumberConfigService extends BaseEntityService<SerialNumberCon
      * @return 编号生成器配置
      */
     public SerialNumberConfig findByClassNameAndConfigType(String className, ConfigType configType) {
-//        String tenantCode = ContextUtil.getTenantCode();
-        String tenantCode = "10044";
+        String tenantCode = ContextUtil.getTenantCode();
         String currentKey = SEI_SERIAL_CONFIG_REDIS_KEY + className + ":" + configType.name() + tenantCode;
         SerialNumberConfig entity = JsonUtils.fromJson(stringRedisTemplate.opsForValue().get(currentKey), SerialNumberConfig.class);
         if (Objects.isNull(entity)) {

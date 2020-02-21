@@ -19,17 +19,17 @@ public class SerialNumberConfigControllerTest extends BaseUnitTest {
 
     @Test
     public void save() {
-        SerialNumberConfig config = new SerialNumberConfig();
-        config.setActivated(true);
-        config.setExpressionConfig("BAR${yyyyMMDD}#{000000}");
-        config.setConfigType(ConfigType.BAR_TYPE);
-        config.setGenFlag(true);
-        config.setInitialSerial(10);
-        config.setCycleStrategy(CycleStrategy.MONTH_CYCLE);
-        config.setName("test");
-        config.setEntityClassName("com.changhong.sei.configcenter.entity.TestEntity");
-        ResultData<SerialNumberConfig> result = serialNumberConfigController.save(config);
-        System.out.println(result);
+//        SerialNumberConfig config = new SerialNumberConfig();
+//        config.setActivated(true);
+//        config.setExpressionConfig("BAR${yyyyMMDD}#{000000}");
+//        config.setConfigType(ConfigType.BAR_TYPE);
+//        config.setGenFlag(true);
+//        config.setInitialSerial(10);
+//        config.setCycleStrategy(CycleStrategy.MONTH_CYCLE);
+//        config.setName("test");
+//        config.setEntityClassName("com.changhong.sei.configcenter.entity.TestEntity");
+//        ResultData<SerialNumberConfig> result = serialNumberConfigController.save(config);
+//        System.out.println(result);
     }
 
     @Test
