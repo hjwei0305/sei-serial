@@ -17,6 +17,6 @@ sei:
       email: test.sei.com
       ip: 127.0.0.1
       locale: zh_CN
-  http:
-    filter:
-      enable: false
+#  http:
+#    filter:
+#      enable: false
