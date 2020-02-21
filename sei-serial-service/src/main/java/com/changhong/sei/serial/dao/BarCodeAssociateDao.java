@@ -1,6 +1,7 @@
 package com.changhong.sei.serial.dao;
 
 import com.changhong.sei.core.dao.BaseEntityDao;
+import com.changhong.sei.serial.entity.BarCodeAssociate;
 import com.changhong.sei.serial.entity.SerialNumberConfig;
 import com.changhong.sei.serial.entity.enumclass.ConfigType;
 import org.springframework.data.jpa.repository.Modifying;
@@ -17,12 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
  * @version 1.0.1 2017-10-20 9:41
  */
 @Repository
-public interface SerialNumberConfigDao extends BaseEntityDao<SerialNumberConfig> {
+public interface BarCodeAssociateDao extends BaseEntityDao<BarCodeAssociate> {
 
-    SerialNumberConfig findByEntityClassNameAndConfigTypeAndTenantCode(String name, ConfigType configType, String className);
-
-    @Modifying
-    @Transactional
-    @Query("update SerialNumberConfig snc set snc.currentSerial = :currentNumber where id = :id")
-    void updateCurrentSerial(@Param("id") String id, @Param("currentNumber") long currentNumber);
 }

@@ -10,8 +10,12 @@ import com.changhong.sei.core.service.bo.OperateResult;
 import com.changhong.sei.core.service.bo.OperateResultWithData;
 import com.changhong.sei.core.util.JsonUtils;
 import com.changhong.sei.serial.dao.SerialNumberConfigDao;
+import com.changhong.sei.serial.entity.BarCodeAssociate;
 import com.changhong.sei.serial.entity.SerialNumberConfig;
+import com.changhong.sei.serial.entity.dto.BarCodeDto;
+import com.changhong.sei.serial.entity.enumclass.ConfigType;
 import com.changhong.sei.serial.entity.enumclass.CycleStrategy;
+import com.changhong.sei.serial.sdk.SerialUtils;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.apache.commons.lang3.StringUtils;
@@ -21,8 +25,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
@@ -42,8 +49,6 @@ public class SerialNumberConfigService extends BaseEntityService<SerialNumberCon
 
     private static final String SEI_SERIAL_CONFIG_REDIS_KEY = "sei-serial:config:";
 
-    private static final String DEFAULT_ISOLATION_CODE = "";
-
     private static final String SEI_SERIAL_VALUE_REDIS_KEY = "sei-serial:value:";
 
     @Resource
@@ -53,26 +58,30 @@ public class SerialNumberConfigService extends BaseEntityService<SerialNumberCon
     @Autowired
     private MqProducer mqProducer;
 
+    @Autowired
+    private BarCodeAssociateService barCodeAssociateService;
+
     @Override
     protected BaseEntityDao<SerialNumberConfig> getDao() {
         return dao;
     }
 
+
     /**
      * 通过Id获取实体
      *
-     * @param className Id标识
+     *
+     * @param className 类路径标识
+     * @param configType 配置类型
      * @return 编号生成器配置
      */
-    @ApiOperation("通过Id获取编号生成器配置")
-    public SerialNumberConfig findByClassName(String className, String isolationCode) {
-        if (StringUtils.isBlank(isolationCode)) {
-            isolationCode = DEFAULT_ISOLATION_CODE;
-        }
-        String currentKey = SEI_SERIAL_CONFIG_REDIS_KEY + className + ":" + isolationCode;
+    public SerialNumberConfig findByClassNameAndConfigType(String className, ConfigType configType) {
+//        String tenantCode = ContextUtil.getTenantCode();
+        String tenantCode = "10044";
+        String currentKey = SEI_SERIAL_CONFIG_REDIS_KEY + className + ":" + configType.name() + tenantCode;
         SerialNumberConfig entity = JsonUtils.fromJson(stringRedisTemplate.opsForValue().get(currentKey), SerialNumberConfig.class);
         if (Objects.isNull(entity)) {
-            entity = dao.findByEntityClassNameAndIsolationCode(className, isolationCode);
+            entity = dao.findByEntityClassNameAndConfigTypeAndTenantCode(className, configType ,tenantCode);
             if (Objects.nonNull(entity)) {
                 cacheConfig(currentKey, entity);
             }
@@ -82,8 +91,11 @@ public class SerialNumberConfigService extends BaseEntityService<SerialNumberCon
         }
         if (Objects.nonNull(entity) && Boolean.TRUE.equals(entity.getGenFlag())) {
             Long currentNumber = entity.getCurrentSerial();
-            String currentValueKey = SEI_SERIAL_VALUE_REDIS_KEY + entity.getEntityClassName() + ":" + isolationCode;
-            if (stringRedisTemplate.hasKey(currentValueKey)) {
+            if(currentNumber<entity.getInitialSerial()){
+                currentNumber = entity.getInitialSerial();
+            }
+            String currentValueKey = SEI_SERIAL_VALUE_REDIS_KEY + entity.getEntityClassName() + ":" + configType.name() + tenantCode;
+            if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(currentValueKey))) {
                 currentNumber = stringRedisTemplate.opsForValue().increment(currentValueKey);
             } else {
                 long expire = getExpireByCycleStrategy(entity.getCycleStrategy());
@@ -91,7 +103,7 @@ public class SerialNumberConfigService extends BaseEntityService<SerialNumberCon
                     currentNumber = stringRedisTemplate.opsForValue().increment(currentValueKey);
                 }
             }
-            if (currentNumber != entity.getCurrentSerial()) {
+            if (currentNumber != null && currentNumber != entity.getCurrentSerial()) {
                 entity.setCurrentSerial(currentNumber);
                 String json = JsonUtils.toJson(entity);
                 cacheConfig(currentKey, entity);
@@ -102,11 +114,17 @@ public class SerialNumberConfigService extends BaseEntityService<SerialNumberCon
         return entity;
     }
 
+    @Override
+    protected OperateResultWithData<SerialNumberConfig> preInsert(SerialNumberConfig entity) {
+        entity.setCurrentSerial(entity.getInitialSerial());
+        return super.preInsert(entity);
+    }
+
     private Long getExpireByCycleStrategy(CycleStrategy cycleStrategy) {
-        switch (cycleStrategy) {
-            case MAX_CYCLE:
-                return -1L;
-            case YEAR_CYCLE: {
+                switch (cycleStrategy) {
+                    case MAX_CYCLE:
+                        return -1L;
+                    case YEAR_CYCLE: {
                 LocalDateTime now = LocalDateTime.now();
                 int currentYear = now.getYear();
                 LocalDateTime endYear = LocalDateTime.of(currentYear, 12, 31, 23, 59, 59);
@@ -130,22 +148,12 @@ public class SerialNumberConfigService extends BaseEntityService<SerialNumberCon
     @Transactional
     public OperateResultWithData<SerialNumberConfig> save(SerialNumberConfig serialNumberConfig) {
         OperateResultWithData<SerialNumberConfig> result;
-        SessionUser user = ContextUtil.getSessionUser();
         if (StringUtils.isBlank(serialNumberConfig.getId())) {
-            serialNumberConfig.setCreateDate(new Date());
-            serialNumberConfig.setEditDate(new Date());
-            serialNumberConfig.setCreateAccount(user.getAccount());
-            serialNumberConfig.setEditAccount(user.getAccount());
             result = super.save(serialNumberConfig);
         } else {
-            serialNumberConfig.setEditDate(new Date());
-            serialNumberConfig.setEditAccount(user.getAccount());
             result = super.save(serialNumberConfig);
         }
-        if (StringUtils.isBlank(serialNumberConfig.getIsolationCode())) {
-            serialNumberConfig.setIsolationCode(DEFAULT_ISOLATION_CODE);
-        }
-        String currentKey = SEI_SERIAL_CONFIG_REDIS_KEY + serialNumberConfig.getEntityClassName() + ":" + serialNumberConfig.getIsolationCode();
+        String currentKey = SEI_SERIAL_CONFIG_REDIS_KEY + serialNumberConfig.getEntityClassName() + ":" + serialNumberConfig.getConfigType().name() + serialNumberConfig.getTenantCode();
         cacheConfig(currentKey, serialNumberConfig);
         return result;
     }
@@ -174,7 +182,7 @@ public class SerialNumberConfigService extends BaseEntityService<SerialNumberCon
         // 清除带有隔离码的编号生成器配置缓存
         String pattern = SEI_SERIAL_CONFIG_REDIS_KEY + "*";
         Set<String> keys = stringRedisTemplate.keys(pattern);
-        if (!keys.isEmpty()) {
+        if (!CollectionUtils.isEmpty(keys)) {
             stringRedisTemplate.delete(keys);
         }
     }
@@ -186,11 +194,8 @@ public class SerialNumberConfigService extends BaseEntityService<SerialNumberCon
      */
     private void clearConfigCache(SerialNumberConfig numberConfig) {
         if (Objects.nonNull(numberConfig)) {
-            if (StringUtils.isBlank(numberConfig.getIsolationCode())) {
-                numberConfig.setIsolationCode(DEFAULT_ISOLATION_CODE);
-            }
-            stringRedisTemplate.delete(SEI_SERIAL_CONFIG_REDIS_KEY + numberConfig.getEntityClassName() + ":" + numberConfig.getIsolationCode());
-            stringRedisTemplate.delete(SEI_SERIAL_VALUE_REDIS_KEY + numberConfig.getEntityClassName() + ":" + numberConfig.getIsolationCode());
+            stringRedisTemplate.delete(SEI_SERIAL_CONFIG_REDIS_KEY + numberConfig.getEntityClassName() + ":" + numberConfig.getConfigType().name() + numberConfig.getTenantCode());
+            stringRedisTemplate.delete(SEI_SERIAL_VALUE_REDIS_KEY + numberConfig.getEntityClassName() + ":" + numberConfig.getConfigType().name() + numberConfig.getTenantCode());
         }
     }
 
@@ -210,5 +215,23 @@ public class SerialNumberConfigService extends BaseEntityService<SerialNumberCon
                     clearConfigCache(c);
                     return dao.save(c);
                 });
+    }
+
+    public String genNumberAndSaveAssociate(BarCodeDto barCodeDto) {
+        SerialNumberConfig config = this.findByClassNameAndConfigType(barCodeDto.getClassPath(), ConfigType.BAR_TYPE);
+        String serialItem = SerialUtils.getSerialItem(config.getExpressionConfig());
+        if (Boolean.TRUE.equals(config.getGenFlag())) {
+            log.info("直接从服务获取编号进行解析");
+            String barCode = SerialUtils.parserExpression(config.getExpressionConfig(), config.getCurrentSerial(), serialItem, barCodeDto.getExpressionParam());
+            if(StringUtils.isNotBlank(barCodeDto.getReferenceId())){
+                BarCodeAssociate barCodeAssociate = new BarCodeAssociate();
+                barCodeAssociate.setBarCode(barCode);
+                barCodeAssociate.setConfigId(config.getId());
+                barCodeAssociate.setReferenceId(barCodeDto.getReferenceId());
+                barCodeAssociateService.save(barCodeAssociate);
+            }
+            return barCode;
+        }
+        return null;
     }
 }

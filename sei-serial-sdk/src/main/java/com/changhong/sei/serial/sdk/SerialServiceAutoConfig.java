@@ -26,6 +26,12 @@ public class SerialServiceAutoConfig {
 
     @Bean
     @ConditionalOnMissingBean
+    public BarCodeService barCodeService(SerialServiceProperty serialServiceProperty){
+        return new BarCodeService(serialServiceProperty);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
     public SerialService serialService(SerialServiceProperty serialServiceProperty){
         return new SerialService(serialServiceProperty.getUrl());
     }
