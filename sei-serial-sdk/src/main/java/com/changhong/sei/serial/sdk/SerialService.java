@@ -239,9 +239,9 @@ public class SerialService {
         String expressiong = "ENV${code}${YYYYMMddHHmmssSSS}#{000000}";
 //        Map<String,String> param = new HashMap<>();
 //        param.put("code","HX");
-        SerialService serialService = new SerialService("http://127.0.0.1:8080/serial-service", null, null);
+        SerialService serialService = new SerialService("http://10.4.208.86:8100/api-gateway/sei-serial", null, null);
         long sta = System.currentTimeMillis();
-        expressiong = serialService.getNumber("com.changhong.sei.configcenter.entity.TestEntity");
+        expressiong = serialService.getNumber("com.changhong.eams.entity.DocumentCategory");
 //        Long num = serialService.getCurrentNumber("ENVHX20200205092108103000003", expressiong);
         System.out.println(expressiong);
         System.out.println(System.currentTimeMillis() - sta);

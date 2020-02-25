@@ -2,17 +2,14 @@ package com.changhong.sei.serial.sdk;
 
 import com.alibaba.fastjson.JSON;
 import com.changhong.sei.serial.sdk.entity.BarCodeDto;
-import com.changhong.sei.serial.sdk.entity.ConfigType;
-import com.changhong.sei.serial.sdk.entity.CycleStrategy;
 import com.changhong.sei.serial.sdk.entity.SerialConfig;
-import com.chonghong.sei.util.thread.ThreadLocalUtil;
+import com.changhong.sei.util.thread.ThreadLocalUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
@@ -21,7 +18,6 @@ import java.net.URLEncoder;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;

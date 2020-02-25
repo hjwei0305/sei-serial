@@ -1,7 +1,6 @@
 package com.changhong.sei.serial.service;
 
 import com.changhong.sei.core.context.ContextUtil;
-import com.changhong.sei.core.context.SessionUser;
 import com.changhong.sei.core.dao.BaseEntityDao;
 import com.changhong.sei.core.dto.ResultData;
 import com.changhong.sei.core.mq.MqProducer;
@@ -9,6 +8,7 @@ import com.changhong.sei.core.service.BaseEntityService;
 import com.changhong.sei.core.service.bo.OperateResult;
 import com.changhong.sei.core.service.bo.OperateResultWithData;
 import com.changhong.sei.core.util.JsonUtils;
+import com.changhong.sei.core.util.JwtTokenUtil;
 import com.changhong.sei.serial.dao.SerialNumberConfigDao;
 import com.changhong.sei.serial.entity.BarCodeAssociate;
 import com.changhong.sei.serial.entity.SerialNumberConfig;
@@ -28,8 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
@@ -70,17 +68,17 @@ public class SerialNumberConfigService extends BaseEntityService<SerialNumberCon
     /**
      * 通过Id获取实体
      *
-     *
-     * @param className 类路径标识
+     * @param className  类路径标识
      * @param configType 配置类型
      * @return 编号生成器配置
      */
     public SerialNumberConfig findByClassNameAndConfigType(String className, ConfigType configType) {
+
         String tenantCode = ContextUtil.getTenantCode();
         String currentKey = SEI_SERIAL_CONFIG_REDIS_KEY + className + ":" + configType.name() + tenantCode;
         SerialNumberConfig entity = JsonUtils.fromJson(stringRedisTemplate.opsForValue().get(currentKey), SerialNumberConfig.class);
         if (Objects.isNull(entity)) {
-            entity = dao.findByEntityClassNameAndConfigTypeAndTenantCode(className, configType ,tenantCode);
+            entity = dao.findByEntityClassNameAndConfigTypeAndTenantCode(className, configType, tenantCode);
             if (Objects.nonNull(entity)) {
                 cacheConfig(currentKey, entity);
             }
@@ -90,7 +88,7 @@ public class SerialNumberConfigService extends BaseEntityService<SerialNumberCon
         }
         if (Objects.nonNull(entity) && Boolean.TRUE.equals(entity.getGenFlag())) {
             Long currentNumber = entity.getCurrentSerial();
-            if(currentNumber<entity.getInitialSerial()){
+            if (currentNumber < entity.getInitialSerial()) {
                 currentNumber = entity.getInitialSerial();
             }
             String currentValueKey = SEI_SERIAL_VALUE_REDIS_KEY + entity.getEntityClassName() + ":" + configType.name() + tenantCode;
@@ -120,10 +118,10 @@ public class SerialNumberConfigService extends BaseEntityService<SerialNumberCon
     }
 
     private Long getExpireByCycleStrategy(CycleStrategy cycleStrategy) {
-                switch (cycleStrategy) {
-                    case MAX_CYCLE:
-                        return -1L;
-                    case YEAR_CYCLE: {
+        switch (cycleStrategy) {
+            case MAX_CYCLE:
+                return -1L;
+            case YEAR_CYCLE: {
                 LocalDateTime now = LocalDateTime.now();
                 int currentYear = now.getYear();
                 LocalDateTime endYear = LocalDateTime.of(currentYear, 12, 31, 23, 59, 59);
@@ -222,7 +220,7 @@ public class SerialNumberConfigService extends BaseEntityService<SerialNumberCon
         if (Boolean.TRUE.equals(config.getGenFlag())) {
             log.info("直接从服务获取编号进行解析");
             String barCode = SerialUtils.parserExpression(config.getExpressionConfig(), config.getCurrentSerial(), serialItem, barCodeDto.getExpressionParam());
-            if(StringUtils.isNotBlank(barCodeDto.getReferenceId())){
+            if (StringUtils.isNotBlank(barCodeDto.getReferenceId())) {
                 BarCodeAssociate barCodeAssociate = new BarCodeAssociate();
                 barCodeAssociate.setBarCode(barCode);
                 barCodeAssociate.setConfigId(config.getId());
@@ -232,5 +230,13 @@ public class SerialNumberConfigService extends BaseEntityService<SerialNumberCon
             return barCode;
         }
         return null;
+    }
+
+    public static void main(String[] args) {
+        JwtTokenUtil jwtTokenUtil = new JwtTokenUtil();
+        String token = "eyJhbGciOiJIUzUxMiJ9.eyJyYW5kb21LZXkiOiIwREI3QkY2Ni01NEFFLTExRUEtOTEyNS0wODAwNTgwMDAwMDUiLCJzdWIiOiJhZG1pbiIsImF1dGhvcml0eVBvbGljeSI6IlRlbmFudEFkbWluIiwiaXAiOiJVbmtub3duIiwidXNlclR5cGUiOiJFbXBsb3llZSIsInVzZXJOYW1lIjoi57O757uf566h55CG5ZGYIiwibG9jYWxlIjoiemhfQ04iLCJleHAiOjE1ODIzNzgxMTEsInVzZXJJZCI6IkI1NEU4OTY0LUQxNEQtMTFFOC1BNjRCLTAyNDJDMEE4NDQxQiIsImlhdCI6MTU4MjI5MTcxMSwidGVuYW50IjoiMTAwNDQiLCJhY2NvdW50IjoiYWRtaW4ifQ.h1EC_5IoZt-92jI2h1zH8hsxbk5h94ewVxSR7IgMI67oIFsAtvx3GOcXpzffv2gnjDBxfJqfECTAAFX4Vpji3w";
+
+        String s = jwtTokenUtil.getSubjectFromToken(token);
+        System.out.println(s);
     }
 }
