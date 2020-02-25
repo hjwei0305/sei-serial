@@ -15,8 +15,11 @@ dependencies {
     compile(
             "mysql:mysql-connector-java:$mysqlVersion",
             "org.modelmapper:modelmapper:$modelmapper_version",
+            "org.modelmapper:modelmapper:$modelmapper_version",
             "com.changhong.sei:sei-service-starter:$sei_version",
             "com.changhong.sei:sei-mq-starter:$sei_version",
+            'redis.clients:jedis',
+            'org.apache.commons:commons-pool2'
     )
 
     testCompile(
