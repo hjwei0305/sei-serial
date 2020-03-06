@@ -26,6 +26,9 @@ public class BarCodeAssociate extends BaseAuditableEntity implements ITenant {
     @Column(name = "config_id")
     private String configId;
 
+    @Column(name = "isolation_code")
+    private String isolationCode;
+
     public String getBarCode() {
         return barCode;
     }
@@ -50,6 +53,13 @@ public class BarCodeAssociate extends BaseAuditableEntity implements ITenant {
         this.configId = configId;
     }
 
+    public String getIsolationCode() {
+        return isolationCode;
+    }
+
+    public void setIsolationCode(String isolationCode) {
+        this.isolationCode = isolationCode;
+    }
 
     @Override
     public String getTenantCode() {

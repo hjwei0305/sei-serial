@@ -2,6 +2,7 @@ package com.changhong.sei.serial.sdk;
 
 import com.alibaba.fastjson.JSON;
 import com.changhong.sei.serial.sdk.entity.BarCodeDto;
+import com.changhong.sei.serial.sdk.entity.IsolationRecordDto;
 import com.changhong.sei.serial.sdk.entity.SerialConfig;
 import com.changhong.sei.util.thread.ThreadLocalUtil;
 import org.apache.commons.lang3.StringUtils;
@@ -17,7 +18,9 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAdjusters;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -31,6 +34,12 @@ public class SerialUtils {
 
     private static final Logger log = LoggerFactory.getLogger(SerialUtils.class);
 
+    public static final String DEFAULT_ISOLATION = "default";
+
+    private static final String DEFAULT_DATE_STRING = "dateString";
+
+    private static final String SEI_CONFIG_VALUE_REDIS_KEY = "sei-serial:value:";
+
     private static final String SERIAL_URI = "/serialNumberConfig/findByClassName";
 
     private static final String BARCODE_URI = "/serialNumberConfig/genAndSaveAssociate";
@@ -41,25 +50,26 @@ public class SerialUtils {
 
     private static final String HEADER_TOKEN_KEY = "x-authorization";
 
-    public static SerialConfig getSerialConfig(String configAddress, String path) {
-        SerialConfig config = null;
+    public static IsolationRecordDto getSerialConfig(String configAddress, String path, String isolation) {
+        IsolationRecordDto recordDto = null;
         Map<String, String> params = new HashMap<>();
         params.put("className", path);
+        params.put("isolation", isolation);
         try {
             String urlName = getRequestUrl(configAddress + SERIAL_URI, params);
-            log.info("请求给号服务http地址为：{}", urlName);
+            log.debug("请求给号服务http地址为：{}", urlName);
             String utils = getHttpResult(urlName, "GET", null);
-            config = JSON.parseObject(utils, SerialConfig.class);
-            log.info("获取 {} 的编号规则为 {}", path, config);
+            recordDto = JSON.parseObject(utils, IsolationRecordDto.class);
+            log.debug("获取 {} 的编号规则为 {}", path, recordDto);
         } catch (Exception e) {
             log.error("获取编号配置出错", e);
         }
-        return config;
+        return recordDto;
     }
 
     public static String getBarCodeFromService(String configAddress, BarCodeDto barCodeDto) {
         String urlName = configAddress + BARCODE_URI;
-        log.info("请求给号服务http地址为：{}", urlName);
+        log.debug("请求给号服务http地址为：{}", urlName);
         return getHttpResult(urlName, "POST", barCodeDto);
     }
 
@@ -168,6 +178,8 @@ public class SerialUtils {
 
             } else if(!CollectionUtils.isEmpty(param)){
                 expressionConfig = expressionConfig.replace("${" + paramItem + "}", String.valueOf(param.get(paramItem)));
+            }else {
+                expressionConfig = expressionConfig.replace("${" + paramItem + "}", paramItem);
             }
             paramMatcher = paramPattern.matcher(expressionConfig);
         }
@@ -178,8 +190,7 @@ public class SerialUtils {
     public static String getSerialItem(String expressionConfig) {
         Matcher serialMatcher = serialPattern.matcher(expressionConfig);
         if (serialMatcher.find()) {
-            String serialItem = serialMatcher.group(0);
-            return serialItem;
+            return serialMatcher.group(0);
         }
         return "0";
     }
@@ -189,7 +200,11 @@ public class SerialUtils {
         Matcher serialMatcher = serialPattern.matcher(expression);
         if (serialMatcher.find()) {
             String serialItem = serialMatcher.group(0);
-            String temp = currentCode.substring(currentCode.length() - serialItem.length());
+            int len = currentCode.length() - serialItem.length();
+            String temp = currentCode;
+            if(len>0){
+                temp = currentCode.substring(len);
+            }
             try {
                 return Long.parseLong(temp);
             } catch (Exception e) {
@@ -220,5 +235,56 @@ public class SerialUtils {
         numberFormat.setMinimumIntegerDigits(length);
         numberFormat.setMaximumIntegerDigits(length);
         return numberFormat.format(serial);
+    }
+
+    /**
+     * 循环策略
+     * @param cycleStrategy
+     * @return
+     */
+    public static Long getExpireByCycleStrategy(String cycleStrategy) {
+        switch (cycleStrategy) {
+            case "MAX_CYCLE":
+                return -1L;
+            case "YEAR_CYCLE": {
+                LocalDateTime now = LocalDateTime.now();
+                int currentYear = now.getYear();
+                LocalDateTime endYear = LocalDateTime.of(currentYear, 12, 31, 23, 59, 59);
+                return endYear.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() - System.currentTimeMillis();
+            }
+            case "MONTH_CYCLE": {
+                LocalDateTime lastDayOfMonth = LocalDateTime.now().with(TemporalAdjusters.lastDayOfMonth());
+                return lastDayOfMonth.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() - System.currentTimeMillis();
+            }
+            default:
+                return 0L;
+        }
+    }
+
+    /**
+     * 循环策略
+     * @param cycleStrategy
+     * @return
+     */
+    public static String getDateStringByCycleStrategy(String cycleStrategy) {
+        switch (cycleStrategy) {
+            case "MAX_CYCLE":
+                return DEFAULT_DATE_STRING;
+            case "YEAR_CYCLE": {
+                return DateTimeFormatter.ofPattern("yyyy").format(LocalDateTime.now());
+            }
+            case "MONTH_CYCLE": {
+                return DateTimeFormatter.ofPattern("yyyymm").format(LocalDateTime.now());
+            }
+            case "DAY_CYCLE": {
+                return DateTimeFormatter.ofPattern("yyyymmDD").format(LocalDateTime.now());
+            }
+            default:
+                return "";
+        }
+    }
+
+    public static String getValueKey(String className,String configType,String tenantCode,String isolation,String dateString){
+        return SEI_CONFIG_VALUE_REDIS_KEY + className + ":" + configType + ":" + tenantCode + ":" + isolation + ":" + dateString;
     }
 }

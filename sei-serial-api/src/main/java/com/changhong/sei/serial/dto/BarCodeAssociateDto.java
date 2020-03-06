@@ -8,6 +8,8 @@ public class BarCodeAssociateDto {
 
     private String configId;
 
+    private String isolation;
+
     public String getBarCode() {
         return barCode;
     }
@@ -32,4 +34,11 @@ public class BarCodeAssociateDto {
         this.configId = configId;
     }
 
+    public String getIsolation() {
+        return isolation;
+    }
+
+    public void setIsolation(String isolation) {
+        this.isolation = isolation;
+    }
 }

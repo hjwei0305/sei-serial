@@ -2,6 +2,7 @@ package com.changhong.sei.serial.controller;
 
 import com.changhong.sei.core.dto.ResultData;
 import com.changhong.sei.core.test.BaseUnitTest;
+import com.changhong.sei.serial.entity.IsolationRecord;
 import com.changhong.sei.serial.entity.SerialNumberConfig;
 import com.changhong.sei.serial.entity.enumclass.ConfigType;
 import com.changhong.sei.serial.entity.enumclass.CycleStrategy;
@@ -34,7 +35,7 @@ public class SerialNumberConfigControllerTest extends BaseUnitTest {
 
     @Test
     public void findByClassName() {
-        SerialNumberConfig result = serialNumberConfigController.findByClassName("com.changhong.sei.configcenter.entity.TestEntity");
-        System.out.println(result.getCurrentSerial());
+        IsolationRecord result = serialNumberConfigController.findByClassName("com.changhong.sei.configcenter.entity.TestEntity", null);
+        System.out.println(result);
     }
 }

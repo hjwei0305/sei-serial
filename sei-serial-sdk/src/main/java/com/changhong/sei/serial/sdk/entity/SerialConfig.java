@@ -30,11 +30,6 @@ public class SerialConfig {
     private Long initialSerial;
 
     /**
-     * 当前序号
-     */
-    private Long currentSerial;
-
-    /**
      * 是否在服务端生成编号
      */
     private Boolean genFlag = Boolean.FALSE;
@@ -89,14 +84,6 @@ public class SerialConfig {
         this.initialSerial = initialSerial;
     }
 
-    public Long getCurrentSerial() {
-        return currentSerial;
-    }
-
-    public void setCurrentSerial(Long currentSerial) {
-        this.currentSerial = currentSerial;
-    }
-
     public Boolean getGenFlag() {
         return genFlag;
     }
@@ -120,7 +107,6 @@ public class SerialConfig {
                 ", name='" + name + '\'' +
                 ", expressionConfig='" + expressionConfig + '\'' +
                 ", initialSerial=" + initialSerial +
-                ", currentSerial=" + currentSerial +
                 ", genFlag=" + genFlag +
                 ", cycleStrategy=" + cycleStrategy +
                 '}';

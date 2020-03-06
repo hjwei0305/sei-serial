@@ -54,12 +54,6 @@ public class SerialNumberConfig extends BaseAuditableEntity implements ITenant {
     private long initialSerial;
 
     /**
-     * 当前序号
-     */
-    @Column(name = "current_serial", nullable = false)
-    private long currentSerial;
-
-    /**
      * 是否在服务端生成编号
      */
     @Column(name = "gen_flag")
@@ -123,14 +117,6 @@ public class SerialNumberConfig extends BaseAuditableEntity implements ITenant {
         this.initialSerial = initialSerial;
     }
 
-    public long getCurrentSerial() {
-        return currentSerial;
-    }
-
-    public void setCurrentSerial(long currentSerial) {
-        this.currentSerial = currentSerial;
-    }
-
     public Boolean getGenFlag() {
         return genFlag;
     }
@@ -174,7 +160,6 @@ public class SerialNumberConfig extends BaseAuditableEntity implements ITenant {
                 ", name='" + name + '\'' +
                 ", expressionConfig='" + expressionConfig + '\'' +
                 ", initialSerial=" + initialSerial +
-                ", currentSerial=" + currentSerial +
                 ", genFlag=" + genFlag +
                 ", cycleStrategy=" + cycleStrategy +
                 ", activated=" + activated +

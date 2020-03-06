@@ -24,6 +24,11 @@ public class BarCodeDto implements Serializable {
      */
     private String referenceId;
 
+    /***
+     * 隔离码
+     */
+    private String isolation;
+
     /**
      * 表达式参数
      */
@@ -51,5 +56,13 @@ public class BarCodeDto implements Serializable {
 
     public void setExpressionParam(Map<String, String> expressionParam) {
         this.expressionParam = expressionParam;
+    }
+
+    public String getIsolation() {
+        return isolation;
+    }
+
+    public void setIsolation(String isolation) {
+        this.isolation = isolation;
     }
 }

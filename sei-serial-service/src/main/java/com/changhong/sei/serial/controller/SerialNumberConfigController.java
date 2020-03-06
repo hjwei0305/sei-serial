@@ -6,12 +6,13 @@ import com.changhong.sei.core.dto.serach.Search;
 import com.changhong.sei.core.dto.serach.SearchFilter;
 import com.changhong.sei.core.service.bo.OperateResultWithData;
 import com.changhong.sei.serial.api.SerialNumberConfigApi;
-import com.changhong.sei.serial.dao.BarCodeAssociateDao;
 import com.changhong.sei.serial.dto.BarCodeAssociateDto;
 import com.changhong.sei.serial.entity.BarCodeAssociate;
+import com.changhong.sei.serial.entity.IsolationRecord;
 import com.changhong.sei.serial.entity.SerialNumberConfig;
-import com.changhong.sei.serial.entity.dto.BarCodeDto;
 import com.changhong.sei.serial.entity.enumclass.ConfigType;
+import com.changhong.sei.serial.sdk.SerialUtils;
+import com.changhong.sei.serial.sdk.entity.BarCodeDto;
 import com.changhong.sei.serial.service.BarCodeAssociateService;
 import com.changhong.sei.serial.service.SerialNumberConfigService;
 import io.swagger.annotations.Api;
@@ -52,8 +53,8 @@ public class SerialNumberConfigController implements SerialNumberConfigApi {
     }
 
     @GetMapping("findByClassName")
-    public SerialNumberConfig findByClassName(@RequestParam String className){
-        return serialNumberConfigService.findByClassNameAndConfigType(className, ConfigType.CODE_TYPE);
+    public IsolationRecord findByClassName(@RequestParam String className, String isolation){
+       return serialNumberConfigService.findByClassNameAndConfigType(className, ConfigType.CODE_TYPE,isolation);
     }
 
     @PostMapping("genAndSaveAssociate")

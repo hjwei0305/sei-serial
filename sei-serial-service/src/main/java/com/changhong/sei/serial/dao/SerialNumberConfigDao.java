@@ -21,8 +21,4 @@ public interface SerialNumberConfigDao extends BaseEntityDao<SerialNumberConfig>
 
     SerialNumberConfig findByEntityClassNameAndConfigTypeAndTenantCode(String name, ConfigType configType, String className);
 
-    @Modifying
-    @Transactional
-    @Query("update SerialNumberConfig snc set snc.currentSerial = :currentNumber where id = :id")
-    void updateCurrentSerial(@Param("id") String id, @Param("currentNumber") long currentNumber);
 }

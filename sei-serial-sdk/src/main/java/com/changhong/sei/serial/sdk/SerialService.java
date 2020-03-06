@@ -2,6 +2,7 @@ package com.changhong.sei.serial.sdk;
 
 import com.changhong.sei.serial.sdk.entity.ConfigType;
 import com.changhong.sei.serial.sdk.entity.CycleStrategy;
+import com.changhong.sei.serial.sdk.entity.IsolationRecordDto;
 import com.changhong.sei.serial.sdk.entity.SerialConfig;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -13,9 +14,7 @@ import javax.sql.DataSource;
 import java.lang.annotation.Annotation;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.temporal.TemporalAdjusters;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -25,8 +24,6 @@ public class SerialService {
     private static final Logger log = LoggerFactory.getLogger(SerialService.class);
 
     private String configAddress;
-
-    private static final String SEI_CONFIG_VALUE_REDIS_KEY = "sei-serial:value:";
 
     private StringRedisTemplate stringRedisTemplate;
 
@@ -71,9 +68,22 @@ public class SerialService {
      * @return
      */
     public String getNumber(String classPath) {
-        return this.getNumber(classPath, null);
+        return this.getNumber(classPath, null,null);
     }
 
+    /**
+     * 通过类地址获取编号
+     *
+     * @param classPath
+     * @return
+     */
+    public String getNumber(String classPath,String isolation) {
+        return this.getNumber(classPath, null,isolation);
+    }
+
+    public String getNumber(String classPath, Map<String, String> param) {
+        return this.getNumber(classPath, param, null,null);
+    }
 
     /**
      * 通过类地址和参数获取编号
@@ -82,8 +92,8 @@ public class SerialService {
      * @param param
      * @return
      */
-    public String getNumber(String classPath, Map<String, String> param) {
-        return this.getNumber(classPath, param, null);
+    public String getNumber(String classPath, Map<String, String> param,String isolation) {
+        return this.getNumber(classPath, param, null,isolation);
     }
 
     /***
@@ -93,8 +103,16 @@ public class SerialService {
      * @param tableName
      * @return
      */
-    public String getNumber(String classPath, Map<String, String> param, String tableName) {
-        SerialConfig config = SerialUtils.getSerialConfig(configAddress, classPath);
+    public String getNumber(String classPath, Map<String, String> param, String tableName, String isolation) {
+        if(StringUtils.isBlank(isolation)){
+            isolation = SerialUtils.DEFAULT_ISOLATION;
+        }
+        IsolationRecordDto recordDto = SerialUtils.getSerialConfig(configAddress, classPath, isolation);
+        if(Objects.isNull(recordDto)){
+            log.error("未获取到相应class【{}】,隔离码【{}】的配置", classPath,isolation);
+            return null;
+        }
+        SerialConfig config = recordDto.getSerialNumberConfig();
         if (Objects.isNull(config)) {
             log.error("未获取到相应class【{}】的配置", classPath);
             return null;
@@ -102,10 +120,10 @@ public class SerialService {
         String serialItem = SerialUtils.getSerialItem(config.getExpressionConfig());
         if (Boolean.TRUE.equals(config.getGenFlag())) {
             log.info("直接从服务获取编号进行解析");
-            return SerialUtils.parserExpression(config.getExpressionConfig(), config.getCurrentSerial(), serialItem, param);
+            return SerialUtils.parserExpression(config.getExpressionConfig(), recordDto.getCurrentNumber(), serialItem, param);
         }
-        Long number = getNextNumber(classPath, tableName, config);
-        number = adjustCurrentNumber(number,config,serialItem);
+        Long number = getNextNumber(classPath, tableName, recordDto,isolation);
+        number = adjustCurrentNumber(number,config,serialItem,isolation,recordDto.getDateString());
         log.info("获得 {} 的下一编号为 {}", classPath, number);
         return SerialUtils.parserExpression(config.getExpressionConfig(), number, serialItem, param);
     }
@@ -117,11 +135,11 @@ public class SerialService {
      * @param serialItem
      * @return
      */
-    private Long adjustCurrentNumber(Long currentSerial, SerialConfig config, String serialItem){
+    private Long adjustCurrentNumber(Long currentSerial, SerialConfig config, String serialItem,String isolation,String dateString){
         if (config.getCycleStrategy() == CycleStrategy.MAX_CYCLE && String.valueOf(currentSerial).length() > serialItem.length()) {
             currentSerial = 1L;
             if (Objects.nonNull(stringRedisTemplate)) {
-                String currentKey = SEI_CONFIG_VALUE_REDIS_KEY + config.getEntityClassName() + ":" + ConfigType.CODE_TYPE + config.getTenantCode();
+                String currentKey = SerialUtils.getValueKey(config.getEntityClassName(),ConfigType.CODE_TYPE.name(),config.getTenantCode(),isolation,dateString);
                 stringRedisTemplate.opsForValue().set(currentKey, currentSerial.toString());
             }
         }
@@ -135,7 +153,21 @@ public class SerialService {
      * @return
      */
     public String getNumber(Class clz) {
-        return this.getNumber(clz, null);
+        return this.getNumber(clz, null,null);
+    }
+
+    /**
+     * 通过实体类获取标号
+     *
+     * @param clz
+     * @return
+     */
+    public String getNumber(Class clz, String isolation) {
+        return this.getNumber(clz, null,isolation);
+    }
+
+    public String getNumber(Class clz, Map<String, String> param) {
+        return this.getNumber(clz, param,null);
     }
 
 
@@ -145,7 +177,7 @@ public class SerialService {
      * @param param
      * @return
      */
-    public String getNumber(Class clz, Map<String, String> param) {
+    public String getNumber(Class clz, Map<String, String> param,String isolation) {
         String path = clz.getName();
         Annotation[] annotations = clz.getAnnotations();
         String tableName = "";
@@ -155,11 +187,14 @@ public class SerialService {
                 tableName = ((Table) currentAnnotation).name();
             }
         }
-        return getNumber(path, param, tableName);
+        return getNumber(path, param, tableName,isolation);
     }
 
-    private Long getNextNumber(String path, String tableName, SerialConfig config) {
-        String currentKey = SEI_CONFIG_VALUE_REDIS_KEY + path + ":" + ConfigType.CODE_TYPE + config.getTenantCode();
+    private Long getNextNumber(String path, String tableName, IsolationRecordDto recordDto,
+                               String isolation) {
+        SerialConfig config = recordDto.getSerialNumberConfig();
+        String currentKey = SerialUtils.getValueKey(path,ConfigType.CODE_TYPE.name(),config.getTenantCode(),
+                isolation,recordDto.getDateString());
         Long currentNumber = 0L;
         if (Objects.isNull(stringRedisTemplate)) {
             Long dbCurrent = getMaxNumberFormDB(tableName, config.getExpressionConfig());
@@ -173,37 +208,18 @@ public class SerialService {
             currentNumber = stringRedisTemplate.opsForValue().increment(currentKey);
         } else {
             Long dbCurrent = getMaxNumberFormDB(tableName, config.getExpressionConfig());
-            // 防止多线程重复获取
-            long expire = getExpireByCycleStrategy(config.getCycleStrategy());
+            long expire = SerialUtils.getExpireByCycleStrategy(config.getCycleStrategy().name());
             if (Objects.nonNull(dbCurrent)) {
                 currentNumber = dbCurrent + 1;
             } else {
-                currentNumber = config.getCurrentSerial();
+                currentNumber = recordDto.getCurrentNumber();
             }
+            // 防止多线程重复获取
             if (Boolean.FALSE.equals(stringRedisTemplate.opsForValue().setIfAbsent(currentKey, currentNumber.toString(), expire, TimeUnit.MILLISECONDS))) {
                 currentNumber = stringRedisTemplate.opsForValue().increment(currentKey);
             }
         }
         return currentNumber;
-    }
-
-    private Long getExpireByCycleStrategy(CycleStrategy cycleStrategy) {
-        switch (cycleStrategy) {
-            case MAX_CYCLE:
-                return -1L;
-            case YEAR_CYCLE: {
-                LocalDateTime now = LocalDateTime.now();
-                int currentYear = now.getYear();
-                LocalDateTime endYear = LocalDateTime.of(currentYear, 12, 31, 23, 59, 59);
-                return endYear.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() - System.currentTimeMillis();
-            }
-            case MONTH_CYCLE: {
-                LocalDateTime lastDayOfMonth = LocalDateTime.now().with(TemporalAdjusters.lastDayOfMonth());
-                return lastDayOfMonth.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() - System.currentTimeMillis();
-            }
-            default:
-                return 0L;
-        }
     }
 
     private Long getMaxNumberFormDB(String tableName, String expression) {
@@ -232,18 +248,5 @@ public class SerialService {
             }
         }
         return null;
-    }
-
-
-    public static void main(String[] args) {
-        String expressiong = "ENV${code}${YYYYMMddHHmmssSSS}#{000000}";
-//        Map<String,String> param = new HashMap<>();
-//        param.put("code","HX");
-        SerialService serialService = new SerialService("http://10.4.208.86:8100/api-gateway/sei-serial", null, null);
-        long sta = System.currentTimeMillis();
-        expressiong = serialService.getNumber("com.changhong.eams.entity.DocumentCategory");
-//        Long num = serialService.getCurrentNumber("ENVHX20200205092108103000003", expressiong);
-        System.out.println(expressiong);
-        System.out.println(System.currentTimeMillis() - sta);
     }
 }

@@ -12,11 +12,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * <strong>实现功能:</strong>
- * <p>编号生成器配置数据访问接口</p>
+ * <p>条码关联功能</p>
  *
  * @author 王锦光 wangj
  * @version 1.0.1 2017-10-20 9:41
  */
+
 @Repository
 public interface BarCodeAssociateDao extends BaseEntityDao<BarCodeAssociate> {
 
