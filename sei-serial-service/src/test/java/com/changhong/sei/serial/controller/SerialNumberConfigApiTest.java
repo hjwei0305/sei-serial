@@ -17,22 +17,22 @@ public class SerialNumberConfigApiTest extends BaseUnitTest {
 
     @Test
     public void getReferenceIdByBarCode() {
-        ResultData<BarCodeAssociateDto> result = serialNumberConfigController.getReferenceIdByBarCode("RCS202003000003");
-        System.out.println(result);
+//        ResultData<BarCodeAssociateDto> result = serialNumberConfigController.getReferenceIdByBarCode("RCS202003000003");
+//        System.out.println(result);
     }
 
     @Test
     public void getBarCodeListByReferenceId() {
-        ResultData<List<BarCodeAssociateDto>> result = serialNumberConfigController.getBarCodeListByReferenceId("123123");
-        System.out.println(result);
+//        ResultData<List<BarCodeAssociateDto>> result = serialNumberConfigController.getBarCodeListByReferenceId("123123");
+//        System.out.println(result);
     }
 
     @Test
     public void getReferenceIdsByListBarCode() {
-        List<String> barCodes = new ArrayList<>();
-        barCodes.add("RCS202003000003");
-        barCodes.add("RCS202003000002");
-        ResultData<List<BarCodeAssociateDto>> result = serialNumberConfigController.getReferenceIdsByListBarCode(barCodes);
-        System.out.println(result);
+//        List<String> barCodes = new ArrayList<>();
+//        barCodes.add("RCS202003000003");
+//        barCodes.add("RCS202003000002");
+//        ResultData<List<BarCodeAssociateDto>> result = serialNumberConfigController.getReferenceIdsByListBarCode(barCodes);
+//        System.out.println(result);
     }
 }
