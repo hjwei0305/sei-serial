@@ -8,7 +8,6 @@ import com.changhong.sei.core.service.BaseEntityService;
 import com.changhong.sei.core.service.bo.OperateResult;
 import com.changhong.sei.core.service.bo.OperateResultWithData;
 import com.changhong.sei.core.util.JsonUtils;
-import com.changhong.sei.core.util.JwtTokenUtil;
 import com.changhong.sei.serial.dao.SerialNumberConfigDao;
 import com.changhong.sei.serial.entity.BarCodeAssociate;
 import com.changhong.sei.serial.entity.IsolationRecord;
@@ -17,7 +16,6 @@ import com.changhong.sei.serial.entity.enumclass.ConfigType;
 import com.changhong.sei.serial.sdk.SerialUtils;
 import com.changhong.sei.serial.sdk.entity.BarCodeDto;
 import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,8 +44,6 @@ public class SerialNumberConfigService extends BaseEntityService<SerialNumberCon
     private final Logger log = LoggerFactory.getLogger(SerialNumberConfigService.class);
 
     private static final String SEI_SERIAL_CONFIG_REDIS_KEY = "sei-serial:config:";
-
-    private static final String SEI_SERIAL_VALUE_REDIS_KEY = "sei-serial:value:";
 
     @Resource
     private StringRedisTemplate stringRedisTemplate;
@@ -120,6 +116,16 @@ public class SerialNumberConfigService extends BaseEntityService<SerialNumberCon
             String json = JsonUtils.toJson(isolationRecord);
             mqProducer.send(json);
             log.info("{} 获取到当前的序列号是 {}", className, currentNumber);
+        }else{
+            if(Objects.isNull(isolationRecord)){
+                isolationRecord = new IsolationRecord();
+                isolationRecord.setIsolationCode(isolation);
+                isolationRecord.setCurrentNumber(entity.getInitialSerial());
+                isolationRecord.setDateString(dateString);
+                isolationRecord.setConfigId(entity.getId());
+            }
+            String json = JsonUtils.toJson(isolationRecord);
+            mqProducer.send(json);
         }
         isolationRecord.setSerialNumberConfig(entity);
         return isolationRecord;
@@ -135,7 +141,7 @@ public class SerialNumberConfigService extends BaseEntityService<SerialNumberCon
     public OperateResultWithData<SerialNumberConfig> save(SerialNumberConfig serialNumberConfig) {
         OperateResultWithData<SerialNumberConfig> result;
         result = super.save(serialNumberConfig);
-        String currentKey = SEI_SERIAL_CONFIG_REDIS_KEY + serialNumberConfig.getEntityClassName() + ":" + serialNumberConfig.getConfigType().name() + serialNumberConfig.getTenantCode();
+        String currentKey = SEI_SERIAL_CONFIG_REDIS_KEY + serialNumberConfig.getEntityClassName() + ":" + serialNumberConfig.getConfigType().name() + ":" + serialNumberConfig.getTenantCode();
         cacheConfig(currentKey, serialNumberConfig);
         return result;
     }
@@ -175,14 +181,21 @@ public class SerialNumberConfigService extends BaseEntityService<SerialNumberCon
      */
     private void clearConfigCache(SerialNumberConfig numberConfig) {
         if (Objects.nonNull(numberConfig)) {
-            stringRedisTemplate.delete(SEI_SERIAL_CONFIG_REDIS_KEY + numberConfig.getEntityClassName() + ":" + numberConfig.getConfigType().name() + numberConfig.getTenantCode());
-            stringRedisTemplate.delete(SEI_SERIAL_VALUE_REDIS_KEY + numberConfig.getEntityClassName() + ":" + numberConfig.getConfigType().name() + numberConfig.getTenantCode());
+            stringRedisTemplate.delete( SEI_SERIAL_CONFIG_REDIS_KEY + numberConfig.getEntityClassName()
+                    + ":" + numberConfig.getConfigType().name() + ":" + numberConfig.getTenantCode());
+            String valueKey = SerialUtils.getValueKey(numberConfig.getEntityClassName(),
+                    numberConfig.getConfigType().name(), numberConfig.getTenantCode(), "*", "*");
+            Set<String> keys = stringRedisTemplate.keys(valueKey);
+            if (!CollectionUtils.isEmpty(keys)) {
+                stringRedisTemplate.delete(keys);
+            }
         }
     }
 
     @Override
     protected OperateResult preDelete(String s) {
         clearConfigCache(s);
+        isolationRecordService.deleteByConfigId(s);
         return super.preDelete(s);
     }
 

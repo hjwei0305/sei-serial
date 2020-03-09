@@ -11,8 +11,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.util.Objects;
+import java.util.Set;
 
 @Service
 public class IsolationRecordService extends BaseEntityService<IsolationRecord> {
@@ -23,7 +25,7 @@ public class IsolationRecordService extends BaseEntityService<IsolationRecord> {
     private IsolationRecordDao isolationRecordDao;
 
     @Autowired
-    private StringRedisTemplate StringRedisTemplate;
+    private StringRedisTemplate stringRedisTemplate;
 
 
     @Override
@@ -59,18 +61,27 @@ public class IsolationRecordService extends BaseEntityService<IsolationRecord> {
 
     private void cacheRecord(IsolationRecord record){
         String key = getCacheKey(record.getConfigId(),record.getIsolationCode(),record.getDateString());
-        StringRedisTemplate.opsForValue().set(key, JsonUtils.toJson(record));
+        stringRedisTemplate.opsForValue().set(key, JsonUtils.toJson(record));
     }
 
-    private void clearCacheRecord(IsolationRecord record){
-        StringRedisTemplate.delete(getCacheKey(record.getConfigId(),record.getIsolationCode(),record.getDateString()));
+    private void clearCacheRecord(String configId){
+        String valueKey = getCacheKey(configId,"*","*");
+        Set<String> keys = stringRedisTemplate.keys(valueKey);
+        if (!CollectionUtils.isEmpty(keys)) {
+            stringRedisTemplate.delete(keys);
+        }
     }
 
     private IsolationRecord getRecord(String configId, String isolation,String dateString){
-        return JsonUtils.fromJson(StringRedisTemplate.opsForValue().get(getCacheKey(configId,isolation,dateString)),IsolationRecord.class);
+        return JsonUtils.fromJson(stringRedisTemplate.opsForValue().get(getCacheKey(configId,isolation,dateString)),IsolationRecord.class);
     }
 
     private String getCacheKey(String configId, String isolation,String dateString){
         return SEI_SERIAL_ISOLATION_REDIS_KEY+configId+":"+isolation+":"+dateString;
+    }
+
+    public void deleteByConfigId(String s) {
+        clearCacheRecord(s);
+        isolationRecordDao.deleteByConfigId(s);
     }
 }
