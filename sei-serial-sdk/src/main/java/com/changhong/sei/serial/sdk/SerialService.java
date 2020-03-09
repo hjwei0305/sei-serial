@@ -14,7 +14,6 @@ import javax.sql.DataSource;
 import java.lang.annotation.Annotation;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;

@@ -22,6 +22,16 @@ public class BarCodeService {
         return this.genBarCode(classPath,new HashMap<>(),SerialUtils.DEFAULT_ISOLATION,referenceId);
     }
 
+    public String genBarCode(String classPath,Map<String,String> params, String referenceId){
+        return this.genBarCode(classPath,params,SerialUtils.DEFAULT_ISOLATION,referenceId);
+    }
+
+    public String genBarCode(Class clz,Map<String,String> params, String referenceId){
+        return this.genBarCode(clz,params,SerialUtils.DEFAULT_ISOLATION,referenceId);
+    }
+
+
+
     public String genBarCode(Class clz,Map<String,String> params, String isolation, String referenceId){
         String classPath = clz.getName();
         return this.genBarCode(classPath,params,isolation,referenceId);
