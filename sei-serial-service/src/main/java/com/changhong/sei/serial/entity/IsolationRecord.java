@@ -2,7 +2,6 @@ package com.changhong.sei.serial.entity;
 
 
 import com.changhong.sei.core.entity.BaseAuditableEntity;
-import com.changhong.sei.core.entity.BaseEntity;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 
