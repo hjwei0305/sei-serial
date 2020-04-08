@@ -65,4 +65,14 @@ public class BarCodeDto implements Serializable {
     public void setIsolation(String isolation) {
         this.isolation = isolation;
     }
+
+    @Override
+    public String toString() {
+        return "BarCodeDto{" +
+                "classPath='" + classPath + '\'' +
+                ", referenceId='" + referenceId + '\'' +
+                ", isolation='" + isolation + '\'' +
+                ", expressionParam=" + expressionParam +
+                '}';
+    }
 }

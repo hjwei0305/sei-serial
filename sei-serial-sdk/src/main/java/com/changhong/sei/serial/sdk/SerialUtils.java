@@ -75,8 +75,9 @@ public class SerialUtils {
 
     private static String getHttpResult(String url, String method, Object params) {
         StringBuilder result = new StringBuilder();
+        HttpURLConnection conn = null;
         try {
-            HttpURLConnection conn = getConnection(url, method, params);
+            conn = getConnection(url, method, params);
             if (Objects.isNull(conn)) {
                 return null;
             }
@@ -88,6 +89,11 @@ public class SerialUtils {
             }
         } catch (Exception e) {
             log.error("给号服务发送请求出现异常", e);
+        }finally {
+            // 连接关闭
+            if(Objects.nonNull(conn)){
+                conn.disconnect();
+            }
         }
         return result.toString();
     }
@@ -100,7 +106,6 @@ public class SerialUtils {
             //设置通用的请求属性
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setRequestProperty("Accept", "application/json");
-            conn.setRequestProperty("connection", "Keep-Alive");
             conn.setRequestProperty("user-agent",
                     "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
             conn.setDoInput(true);    //true表示允许获得输入流,读取服务器响应的数据,该属性默认值为true
