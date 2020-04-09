@@ -108,6 +108,11 @@ public class SerialUtils {
             conn.setRequestProperty("Accept", "application/json");
             conn.setRequestProperty("user-agent",
                     "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
+            String auth = ThreadLocalUtil.getTranVar(HEADER_TOKEN_KEY);
+            log.info("获取当前登录token为 {}", auth);
+            if (StringUtils.isNotBlank(auth)) {
+                conn.setRequestProperty(HEADER_TOKEN_KEY, auth);
+            }
             conn.setDoInput(true);    //true表示允许获得输入流,读取服务器响应的数据,该属性默认值为true
             conn.setDoOutput(true);   //true表示允许获得输出流,向远程服务器发送数据,该属性默认值为false
             conn.setUseCaches(false); //禁止缓存
@@ -124,11 +129,7 @@ public class SerialUtils {
                 out.flush();
                 out.close();
             }
-            String auth = ThreadLocalUtil.getTranVar(HEADER_TOKEN_KEY);
-            log.info("获取当前登录token为 {}", auth);
-            if (StringUtils.isNotBlank(auth)) {
-                conn.setRequestProperty(HEADER_TOKEN_KEY, auth);
-            }
+
             //建立实际的连接
             conn.connect();
             return conn;
