@@ -280,10 +280,10 @@ public class SerialUtils {
                 return DateTimeFormatter.ofPattern("yyyy").format(LocalDateTime.now());
             }
             case "MONTH_CYCLE": {
-                return DateTimeFormatter.ofPattern("yyyymm").format(LocalDateTime.now());
+                return DateTimeFormatter.ofPattern("yyyyMM").format(LocalDateTime.now());
             }
             case "DAY_CYCLE": {
-                return DateTimeFormatter.ofPattern("yyyymmDD").format(LocalDateTime.now());
+                return DateTimeFormatter.ofPattern("yyyyMMdd").format(LocalDateTime.now());
             }
             default:
                 return "";
@@ -292,5 +292,11 @@ public class SerialUtils {
 
     public static String getValueKey(String className,String configType,String tenantCode,String isolation,String dateString){
         return SEI_CONFIG_VALUE_REDIS_KEY + className + ":" + configType + ":" + tenantCode + ":" + isolation + ":" + dateString;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(DateTimeFormatter.ofPattern("yyyymm").format(LocalDateTime.now()));
+        System.out.println(DateTimeFormatter.ofPattern("yyyyMM").format(LocalDateTime.now()));
+        System.out.println(DateTimeFormatter.ofPattern("yyyyMMdd").format(LocalDateTime.now()));
     }
 }
