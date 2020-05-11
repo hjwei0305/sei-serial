@@ -22,8 +22,7 @@ dependencies {
     compile(
             "mysql:mysql-connector-java:$mysqlVersion",
             "org.modelmapper:modelmapper:$modelmapper_version",
-            "org.modelmapper:modelmapper:$modelmapper_version",
-            "com.changhong.sei:sei-service-starter:$sei_version",
+            "com.changhong.sei:sei-cloud-starter:$sei_version",
             "com.changhong.sei:sei-mq-starter:$sei_version",
             'redis.clients:jedis',
             'org.apache.commons:commons-pool2'
@@ -86,7 +85,10 @@ jib {
         jvmFlags = [
                 '-Djava.security.egd=file:/dev/./urandom',
                 '-Dfile.encoding=utf-8',
-                '-Duser.timezone=GMT+08'
+                '-Duser.timezone=GMT+08',
+                '-server',
+                '-Xms512m',
+                '-Xmx1024m'
         ]
         // jvmFlags = ['-Xms512m', '-Xdebug', '-Xmy:flag=jib-rules']
         // 启动类限定名
