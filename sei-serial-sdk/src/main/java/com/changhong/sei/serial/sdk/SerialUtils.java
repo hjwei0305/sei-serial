@@ -3,7 +3,6 @@ package com.changhong.sei.serial.sdk;
 import com.alibaba.fastjson.JSON;
 import com.changhong.sei.serial.sdk.entity.BarCodeDto;
 import com.changhong.sei.serial.sdk.entity.IsolationRecordDto;
-import com.changhong.sei.serial.sdk.entity.SerialConfig;
 import com.changhong.sei.util.thread.ThreadLocalUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -50,6 +49,8 @@ public class SerialUtils {
 
     private static final String HEADER_TOKEN_KEY = "x-authorization";
 
+    private static final String HEADER_TOKEN_KEY_3 = "authorization";
+
     public static IsolationRecordDto getSerialConfig(String configAddress, String path, String isolation) {
         IsolationRecordDto recordDto = null;
         Map<String, String> params = new HashMap<>();
@@ -89,9 +90,9 @@ public class SerialUtils {
             }
         } catch (Exception e) {
             log.error("给号服务发送请求出现异常", e);
-        }finally {
+        } finally {
             // 连接关闭
-            if(Objects.nonNull(conn)){
+            if (Objects.nonNull(conn)) {
                 conn.disconnect();
             }
         }
@@ -112,6 +113,7 @@ public class SerialUtils {
             log.info("获取当前登录token为 {}", auth);
             if (StringUtils.isNotBlank(auth)) {
                 conn.setRequestProperty(HEADER_TOKEN_KEY, auth);
+                conn.setRequestProperty(HEADER_TOKEN_KEY_3, auth);
             }
             conn.setDoInput(true);    //true表示允许获得输入流,读取服务器响应的数据,该属性默认值为true
             conn.setDoOutput(true);   //true表示允许获得输出流,向远程服务器发送数据,该属性默认值为false
@@ -182,9 +184,9 @@ public class SerialUtils {
                 String now = DateTimeFormatter.ofPattern(paramItem).format(LocalDateTime.now());
                 expressionConfig = expressionConfig.replace("${" + paramItem + "}", now);
 
-            } else if(!CollectionUtils.isEmpty(param)){
+            } else if (!CollectionUtils.isEmpty(param)) {
                 expressionConfig = expressionConfig.replace("${" + paramItem + "}", String.valueOf(param.get(paramItem)));
-            }else {
+            } else {
                 expressionConfig = expressionConfig.replace("${" + paramItem + "}", paramItem);
             }
             paramMatcher = paramPattern.matcher(expressionConfig);
@@ -208,7 +210,7 @@ public class SerialUtils {
             String serialItem = serialMatcher.group(0);
             int len = currentCode.length() - serialItem.length();
             String temp = currentCode;
-            if(len>0){
+            if (len > 0) {
                 temp = currentCode.substring(len);
             }
             try {
@@ -245,6 +247,7 @@ public class SerialUtils {
 
     /**
      * 循环策略
+     *
      * @param cycleStrategy
      * @return
      */
@@ -269,6 +272,7 @@ public class SerialUtils {
 
     /**
      * 循环策略
+     *
      * @param cycleStrategy
      * @return
      */
@@ -290,7 +294,7 @@ public class SerialUtils {
         }
     }
 
-    public static String getValueKey(String className,String configType,String tenantCode,String isolation,String dateString){
+    public static String getValueKey(String className, String configType, String tenantCode, String isolation, String dateString) {
         return SEI_CONFIG_VALUE_REDIS_KEY + className + ":" + configType + ":" + tenantCode + ":" + isolation + ":" + dateString;
     }
 
