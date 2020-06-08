@@ -95,7 +95,10 @@ public class SerialNumberConfigService extends BaseEntityService<SerialNumberCon
             } else {
                 if(Objects.nonNull(isolationRecord)){
                     currentNumber = isolationRecord.getCurrentNumber();
+                    // 无缓存、非首次生成的的情况，先完成缓存，setIfAbsent 防止多线程请求
+                    stringRedisTemplate.opsForValue().setIfAbsent(currentValueKey, currentNumber.toString());
                 }
+                // 当无缓存时(当前隔离码首次请求)就取当前值(初始值)，
                 if (Boolean.FALSE.equals(stringRedisTemplate.opsForValue().setIfAbsent(currentValueKey, currentNumber.toString()))) {
                     currentNumber = stringRedisTemplate.opsForValue().increment(currentValueKey);
                 }
