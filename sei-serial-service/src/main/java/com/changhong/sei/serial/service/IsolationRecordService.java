@@ -33,11 +33,11 @@ public class IsolationRecordService extends BaseEntityService<IsolationRecord> {
         return this.isolationRecordDao;
     }
 
-    public IsolationRecord findByConfigIdAndIsolationCodeAndDateString(String configId, String isolation,String dateString) {
-        IsolationRecord isolationRecord = getRecord(configId,isolation,dateString);
-        if(Objects.isNull(isolationRecord)){
-            isolationRecord = isolationRecordDao.findByConfigIdAndIsolationCodeAndDateString(configId,isolation,dateString);
-            if(Objects.nonNull(isolationRecord)){
+    public IsolationRecord findByConfigIdAndIsolationCodeAndDateString(String configId, String isolation, String dateString) {
+        IsolationRecord isolationRecord = getRecord(configId, isolation, dateString);
+        if (Objects.isNull(isolationRecord)) {
+            isolationRecord = isolationRecordDao.findByConfigIdAndIsolationCodeAndDateString(configId, isolation, dateString);
+            if (Objects.nonNull(isolationRecord)) {
                 cacheRecord(isolationRecord);
             }
         }
@@ -46,38 +46,38 @@ public class IsolationRecordService extends BaseEntityService<IsolationRecord> {
 
     @Override
     public OperateResultWithData<IsolationRecord> save(IsolationRecord entity) {
-        if(StringUtils.isBlank(entity.getId())){
+        if (StringUtils.isBlank(entity.getId())) {
             OperateResultWithData<IsolationRecord> result = super.save(entity);
-            if(Boolean.TRUE.equals(result.getSuccess())){
+            if (Boolean.TRUE.equals(result.getSuccess())) {
                 cacheRecord(result.getData());
             }
             return result;
-        }else {
-           isolationRecordDao.updateCurrentSerial(entity.getId(),entity.getCurrentNumber());
-           cacheRecord(entity);
+        } else {
+            isolationRecordDao.updateCurrentSerial(entity.getId(), entity.getCurrentNumber());
+            cacheRecord(entity);
         }
         return OperateResultWithData.operationSuccessWithData(entity);
     }
 
-    private void cacheRecord(IsolationRecord record){
-        String key = getCacheKey(record.getConfigId(),record.getIsolationCode(),record.getDateString());
+    private void cacheRecord(IsolationRecord record) {
+        String key = getCacheKey(record.getConfigId(), record.getIsolationCode(), record.getDateString());
         stringRedisTemplate.opsForValue().set(key, JsonUtils.toJson(record));
     }
 
-    private void clearCacheRecord(String configId){
-        String valueKey = getCacheKey(configId,"*","*");
+    private void clearCacheRecord(String configId) {
+        String valueKey = getCacheKey(configId, "*", "*");
         Set<String> keys = stringRedisTemplate.keys(valueKey);
         if (!CollectionUtils.isEmpty(keys)) {
             stringRedisTemplate.delete(keys);
         }
     }
 
-    private IsolationRecord getRecord(String configId, String isolation,String dateString){
-        return JsonUtils.fromJson(stringRedisTemplate.opsForValue().get(getCacheKey(configId,isolation,dateString)),IsolationRecord.class);
+    private IsolationRecord getRecord(String configId, String isolation, String dateString) {
+        return JsonUtils.fromJson(stringRedisTemplate.opsForValue().get(getCacheKey(configId, isolation, dateString)), IsolationRecord.class);
     }
 
-    private String getCacheKey(String configId, String isolation,String dateString){
-        return SEI_SERIAL_ISOLATION_REDIS_KEY+configId+":"+isolation+":"+dateString;
+    private String getCacheKey(String configId, String isolation, String dateString) {
+        return SEI_SERIAL_ISOLATION_REDIS_KEY + configId + ":" + isolation + ":" + dateString;
     }
 
     public void deleteByConfigId(String s) {

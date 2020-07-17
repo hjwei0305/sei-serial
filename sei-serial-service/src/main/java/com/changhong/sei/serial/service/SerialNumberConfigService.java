@@ -13,6 +13,7 @@ import com.changhong.sei.serial.entity.BarCodeAssociate;
 import com.changhong.sei.serial.entity.IsolationRecord;
 import com.changhong.sei.serial.entity.SerialNumberConfig;
 import com.changhong.sei.serial.entity.enumclass.ConfigType;
+import com.changhong.sei.serial.exception.SerialException;
 import com.changhong.sei.serial.sdk.SerialUtils;
 import com.changhong.sei.serial.sdk.entity.BarCodeDto;
 import io.swagger.annotations.Api;
@@ -70,6 +71,9 @@ public class SerialNumberConfigService extends BaseEntityService<SerialNumberCon
      */
     public IsolationRecord findByClassNameAndConfigType(String className, ConfigType configType, String isolation) {
         String tenantCode = ContextUtil.getTenantCode();
+        if(StringUtils.isNotBlank(tenantCode)){
+            throw new SerialException("未获取到有效租户，请检查token是否有效");
+        }
         String currentKey = SEI_SERIAL_CONFIG_REDIS_KEY + className + ":" + configType.name() + ":" + tenantCode;
         SerialNumberConfig entity = JsonUtils.fromJson(stringRedisTemplate.opsForValue().get(currentKey), SerialNumberConfig.class);
         if (Objects.isNull(entity)) {
