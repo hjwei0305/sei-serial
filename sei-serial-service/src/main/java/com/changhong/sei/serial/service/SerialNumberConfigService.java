@@ -71,7 +71,7 @@ public class SerialNumberConfigService extends BaseEntityService<SerialNumberCon
      */
     public IsolationRecord findByClassNameAndConfigType(String className, ConfigType configType, String isolation) {
         String tenantCode = ContextUtil.getTenantCode();
-        if(StringUtils.isNotBlank(tenantCode)){
+        if(StringUtils.isBlank(tenantCode)){
             throw new SerialException("未获取到有效租户，请检查token是否有效");
         }
         String currentKey = SEI_SERIAL_CONFIG_REDIS_KEY + className + ":" + configType.name() + ":" + tenantCode;
