@@ -24,4 +24,7 @@ nbdist/
 out/
 logs/
 .gradle/
+gradlew.bat
+gradlew
+gradle/
 dependency-reduced-pom.xml
