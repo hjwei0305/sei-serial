@@ -3,7 +3,7 @@ sei:
   application:
     code: sei-serial
     name: 给号服务
-    version: 6.0.1
+    version: '@project_version@'
     env: DEV
     # 是否是兼容模式
     compatible: false
