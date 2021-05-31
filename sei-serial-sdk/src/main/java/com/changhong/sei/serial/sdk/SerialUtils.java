@@ -16,7 +16,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.text.NumberFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
@@ -262,7 +264,7 @@ public class SerialUtils {
                 return endYear.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() - System.currentTimeMillis();
             }
             case "MONTH_CYCLE": {
-                LocalDateTime lastDayOfMonth = LocalDateTime.now().with(TemporalAdjusters.lastDayOfMonth());
+                LocalDateTime lastDayOfMonth = LocalDateTime.of(LocalDate.now(), LocalTime.MAX).with(TemporalAdjusters.lastDayOfMonth());
                 return lastDayOfMonth.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() - System.currentTimeMillis();
             }
             default:
@@ -299,8 +301,8 @@ public class SerialUtils {
     }
 
     public static void main(String[] args) {
-        System.out.println(DateTimeFormatter.ofPattern("yyyymm").format(LocalDateTime.now()));
-        System.out.println(DateTimeFormatter.ofPattern("yyyyMM").format(LocalDateTime.now()));
-        System.out.println(DateTimeFormatter.ofPattern("yyyyMMdd").format(LocalDateTime.now()));
+        LocalDateTime lastDayOfMonth = LocalDateTime.of(LocalDate.now(), LocalTime.MAX).with(TemporalAdjusters.lastDayOfMonth());
+        long a = lastDayOfMonth.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() - System.currentTimeMillis();
+        System.out.println(a);
     }
 }
