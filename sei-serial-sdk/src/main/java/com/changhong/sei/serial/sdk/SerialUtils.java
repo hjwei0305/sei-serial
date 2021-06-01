@@ -258,9 +258,7 @@ public class SerialUtils {
             case "MAX_CYCLE":
                 return -1L;
             case "YEAR_CYCLE": {
-                LocalDateTime now = LocalDateTime.now();
-                int currentYear = now.getYear();
-                LocalDateTime endYear = LocalDateTime.of(currentYear, 12, 31, 23, 59, 59);
+                LocalDateTime endYear = LocalDateTime.of(LocalDate.now(), LocalTime.MAX).with(TemporalAdjusters.lastDayOfYear());
                 return endYear.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() - System.currentTimeMillis();
             }
             case "MONTH_CYCLE": {
@@ -301,8 +299,8 @@ public class SerialUtils {
     }
 
     public static void main(String[] args) {
-        LocalDateTime lastDayOfMonth = LocalDateTime.of(LocalDate.now(), LocalTime.MAX).with(TemporalAdjusters.lastDayOfMonth());
-        long a = lastDayOfMonth.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() - System.currentTimeMillis();
+        LocalDateTime endYear = LocalDateTime.of(LocalDate.now(), LocalTime.MAX).with(TemporalAdjusters.lastDayOfYear());
+        long a = endYear.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() - System.currentTimeMillis();
         System.out.println(a);
     }
 }
