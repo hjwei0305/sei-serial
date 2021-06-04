@@ -62,7 +62,6 @@ public class SerialNumberConfig extends BaseAuditableEntity implements ITenant {
 
     @Column(name = "cycle_strategy")
     private CycleStrategy cycleStrategy = CycleStrategy.MAX_CYCLE;
-
     /**
      * 返回策略，默认新给号
      */

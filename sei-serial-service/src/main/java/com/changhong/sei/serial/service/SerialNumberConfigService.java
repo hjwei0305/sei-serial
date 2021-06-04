@@ -72,33 +72,29 @@ public class SerialNumberConfigService extends BaseEntityService<SerialNumberCon
      */
     public IsolationRecord findByClassNameAndConfigType(String className, ConfigType configType, String isolation) {
         String tenantCode = ContextUtil.getTenantCode();
-        if(StringUtils.isBlank(tenantCode)){
+        if (StringUtils.isBlank(tenantCode)) {
             throw new SerialException("未获取到有效租户，请检查token是否有效");
         }
-        String currentKey = SEI_SERIAL_CONFIG_REDIS_KEY + className + ":" + configType.name() + ":" + tenantCode;
-        SerialNumberConfig entity = JsonUtils.fromJson(stringRedisTemplate.opsForValue().get(currentKey), SerialNumberConfig.class);
+        // 获取配置
+        SerialNumberConfig entity = getConfig(className, configType, tenantCode);
         if (Objects.isNull(entity)) {
-            entity = dao.findByEntityClassNameAndConfigTypeAndTenantCode(className, configType, tenantCode);
-            if (Objects.nonNull(entity)) {
-                cacheConfig(currentKey, entity);
-            }else {
-                return null;
-            }
+            throw new SerialException("未获取到配置，请检查");
         }
+
         String dateString = SerialUtils.getDateStringByCycleStrategy(entity.getCycleStrategy().name());
         IsolationRecord isolationRecord = isolationRecordService
-                .findByConfigIdAndIsolationCodeAndDateString(entity.getId(),isolation,dateString);
+                .findByConfigIdAndIsolationCodeAndDateString(entity.getId(), isolation, dateString);
         if (log.isDebugEnabled()) {
             log.debug("通过className:{} ,获取到当前配置是 {}", className, entity);
         }
         if (Boolean.TRUE.equals(entity.getGenFlag())) {
             Long currentNumber = entity.getInitialSerial();
             String currentValueKey = SerialUtils.getValueKey(entity.getEntityClassName(),
-                    configType.name(),tenantCode,isolation,dateString);
+                    configType.name(), tenantCode, isolation, dateString);
             if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(currentValueKey))) {
                 currentNumber = stringRedisTemplate.opsForValue().increment(currentValueKey);
             } else {
-                if(Objects.nonNull(isolationRecord)){
+                if (Objects.nonNull(isolationRecord)) {
                     currentNumber = isolationRecord.getCurrentNumber();
                     // 无缓存、非首次生成的的情况，先完成缓存，setIfAbsent 防止多线程请求
                     stringRedisTemplate.opsForValue().setIfAbsent(currentValueKey, currentNumber.toString());
@@ -108,20 +104,20 @@ public class SerialNumberConfigService extends BaseEntityService<SerialNumberCon
                     currentNumber = stringRedisTemplate.opsForValue().increment(currentValueKey);
                 }
             }
-            if(Objects.isNull(isolationRecord)){
+            if (Objects.isNull(isolationRecord)) {
                 isolationRecord = new IsolationRecord();
                 isolationRecord.setIsolationCode(isolation);
                 isolationRecord.setCurrentNumber(currentNumber);
                 isolationRecord.setDateString(dateString);
                 isolationRecord.setConfigId(entity.getId());
-            }else {
+            } else {
                 isolationRecord.setCurrentNumber(currentNumber);
             }
             String json = JsonUtils.toJson(isolationRecord);
             mqProducer.send(json);
             log.info("{} 获取到当前的序列号是 {}", className, currentNumber);
-        }else{
-            if(Objects.isNull(isolationRecord)){
+        } else {
+            if (Objects.isNull(isolationRecord)) {
                 isolationRecord = new IsolationRecord();
                 isolationRecord.setIsolationCode(isolation);
                 isolationRecord.setCurrentNumber(entity.getInitialSerial());
@@ -185,7 +181,7 @@ public class SerialNumberConfigService extends BaseEntityService<SerialNumberCon
      */
     private void clearConfigCache(SerialNumberConfig numberConfig) {
         if (Objects.nonNull(numberConfig)) {
-            stringRedisTemplate.delete( SEI_SERIAL_CONFIG_REDIS_KEY + numberConfig.getEntityClassName()
+            stringRedisTemplate.delete(SEI_SERIAL_CONFIG_REDIS_KEY + numberConfig.getEntityClassName()
                     + ":" + numberConfig.getConfigType().name() + ":" + numberConfig.getTenantCode());
             String valueKey = SerialUtils.getValueKey(numberConfig.getEntityClassName(),
                     numberConfig.getConfigType().name(), numberConfig.getTenantCode(), "*", "*");
@@ -216,19 +212,24 @@ public class SerialNumberConfigService extends BaseEntityService<SerialNumberCon
     }
 
     public String genNumberAndSaveAssociate(BarCodeDto barCodeDto) {
-        IsolationRecord isolationRecord = this.findByClassNameAndConfigType(barCodeDto.getClassPath(), ConfigType.BAR_TYPE, barCodeDto.getIsolation());
-        if(Objects.isNull(isolationRecord)){
-            log.info("获取barCode的参数为：{}",barCodeDto);
-            return "获取不到相应配置";
-        }
-        SerialNumberConfig config = isolationRecord.getSerialNumberConfig();
+        String tenantCode = ContextUtil.getTenantCode();
+        SerialNumberConfig config = getConfig(barCodeDto.getClassPath(), ConfigType.BAR_TYPE, tenantCode);
+
         // 重复的返回策略
-        if(ReturnStrategy.REPEAT.equals(config.getReturnStrategy())){
-            BarCodeAssociate barCodeAssociate = barCodeAssociateService.findFirstByProperty("referenceId", barCodeDto.getReferenceId());
-            if(Objects.nonNull(barCodeAssociate) && StringUtils.isNotBlank(barCodeAssociate.getBarCode())){
+        if (ReturnStrategy.REPEAT.equals(config.getReturnStrategy())) {
+            BarCodeAssociate barCodeAssociate = barCodeAssociateService.findMaxByReferenceId(barCodeDto.getReferenceId());
+            if (Objects.nonNull(barCodeAssociate) && StringUtils.isNotBlank(barCodeAssociate.getBarCode())) {
                 return barCodeAssociate.getBarCode();
             }
         }
+
+        // 返回新号
+        IsolationRecord isolationRecord = this.findByClassNameAndConfigType(barCodeDto.getClassPath(), ConfigType.BAR_TYPE, barCodeDto.getIsolation());
+        if (Objects.isNull(isolationRecord)) {
+            log.info("获取barCode的参数为：{}", barCodeDto);
+            return "获取不到相应配置";
+        }
+
         String serialItem = SerialUtils.getSerialItem(config.getExpressionConfig());
         if (Boolean.TRUE.equals(config.getGenFlag())) {
             log.info("直接从服务获取编号进行解析");
@@ -244,5 +245,19 @@ public class SerialNumberConfigService extends BaseEntityService<SerialNumberCon
             return barCode;
         }
         return null;
+    }
+
+    private SerialNumberConfig getConfig(String className, ConfigType configType, String tenantCode) {
+        String currentKey = SEI_SERIAL_CONFIG_REDIS_KEY + className + ":" + configType.name() + ":" + tenantCode;
+        SerialNumberConfig entity = JsonUtils.fromJson(stringRedisTemplate.opsForValue().get(currentKey), SerialNumberConfig.class);
+        if (Objects.isNull(entity)) {
+            entity = dao.findByEntityClassNameAndConfigTypeAndTenantCode(className, configType, tenantCode);
+            if (Objects.nonNull(entity)) {
+                cacheConfig(currentKey, entity);
+            } else {
+                return null;
+            }
+        }
+        return entity;
     }
 }

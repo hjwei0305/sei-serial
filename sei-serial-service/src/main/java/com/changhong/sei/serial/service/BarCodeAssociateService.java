@@ -24,4 +24,7 @@ public class BarCodeAssociateService extends BaseEntityService<BarCodeAssociate>
         return barCodeAssociateDao;
     }
 
+    public BarCodeAssociate findMaxByReferenceId(String referenceId) {
+        return barCodeAssociateDao.findFirstByReferenceIdOrderByCreatedDateDesc(referenceId);
+    }
 }

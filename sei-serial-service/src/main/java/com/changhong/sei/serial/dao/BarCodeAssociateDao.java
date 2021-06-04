@@ -21,4 +21,5 @@ import org.springframework.transaction.annotation.Transactional;
 @Repository
 public interface BarCodeAssociateDao extends BaseEntityDao<BarCodeAssociate> {
 
+    BarCodeAssociate findFirstByReferenceIdOrderByCreatedDateDesc(String referenceId);
 }
