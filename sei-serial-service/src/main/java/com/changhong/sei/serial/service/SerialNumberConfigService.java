@@ -13,6 +13,7 @@ import com.changhong.sei.serial.entity.BarCodeAssociate;
 import com.changhong.sei.serial.entity.IsolationRecord;
 import com.changhong.sei.serial.entity.SerialNumberConfig;
 import com.changhong.sei.serial.entity.enumclass.ConfigType;
+import com.changhong.sei.serial.entity.enumclass.ReturnStrategy;
 import com.changhong.sei.serial.exception.SerialException;
 import com.changhong.sei.serial.sdk.SerialUtils;
 import com.changhong.sei.serial.sdk.entity.BarCodeDto;
@@ -221,6 +222,13 @@ public class SerialNumberConfigService extends BaseEntityService<SerialNumberCon
             return "获取不到相应配置";
         }
         SerialNumberConfig config = isolationRecord.getSerialNumberConfig();
+        // 重复的返回策略
+        if(ReturnStrategy.REPEAT.equals(config.getReturnStrategy())){
+            BarCodeAssociate barCodeAssociate = barCodeAssociateService.findFirstByProperty("referenceId", barCodeDto.getReferenceId());
+            if(Objects.nonNull(barCodeAssociate) && StringUtils.isNotBlank(barCodeAssociate.getBarCode())){
+                return barCodeAssociate.getBarCode();
+            }
+        }
         String serialItem = SerialUtils.getSerialItem(config.getExpressionConfig());
         if (Boolean.TRUE.equals(config.getGenFlag())) {
             log.info("直接从服务获取编号进行解析");

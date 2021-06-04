@@ -2,6 +2,7 @@ package com.changhong.sei.serial.entity;
 
 
 import com.changhong.sei.core.entity.BaseAuditableEntity;
+import com.changhong.sei.core.entity.ITenant;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 
@@ -12,7 +13,7 @@ import javax.persistence.*;
 @Table(name = "isolation_record")
 @DynamicInsert
 @DynamicUpdate
-public class IsolationRecord extends BaseAuditableEntity {
+public class IsolationRecord extends BaseAuditableEntity implements ITenant {
 
     @Column(name = "config_id")
     private String configId;
@@ -25,6 +26,9 @@ public class IsolationRecord extends BaseAuditableEntity {
 
     @Column(name = "current_number")
     private Long currentNumber;
+
+    @Column(name = "tenant_code")
+    private String tenantCode;
 
     @Transient
     private SerialNumberConfig serialNumberConfig;
@@ -78,5 +82,15 @@ public class IsolationRecord extends BaseAuditableEntity {
                 ", currentNumber=" + currentNumber +
                 ", serialNumberConfig=" + serialNumberConfig +
                 '}';
+    }
+
+    @Override
+    public String getTenantCode() {
+        return this.tenantCode;
+    }
+
+    @Override
+    public void setTenantCode(String tenantCode) {
+        this.tenantCode = tenantCode;
     }
 }

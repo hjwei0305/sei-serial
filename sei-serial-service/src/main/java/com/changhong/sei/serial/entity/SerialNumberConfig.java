@@ -5,6 +5,7 @@ import com.changhong.sei.core.entity.BaseAuditableEntity;
 import com.changhong.sei.core.entity.ITenant;
 import com.changhong.sei.serial.entity.enumclass.ConfigType;
 import com.changhong.sei.serial.entity.enumclass.CycleStrategy;
+import com.changhong.sei.serial.entity.enumclass.ReturnStrategy;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 
@@ -61,6 +62,12 @@ public class SerialNumberConfig extends BaseAuditableEntity implements ITenant {
 
     @Column(name = "cycle_strategy")
     private CycleStrategy cycleStrategy = CycleStrategy.MAX_CYCLE;
+
+    /**
+     * 返回策略，默认新给号
+     */
+    @Column(name = "return_strategy")
+    private ReturnStrategy returnStrategy = ReturnStrategy.NEW;
 
     @NotNull
     @Column(nullable = false)
@@ -150,6 +157,14 @@ public class SerialNumberConfig extends BaseAuditableEntity implements ITenant {
     @Override
     public void setTenantCode(String tenantCode) {
         this.tenantCode = tenantCode;
+    }
+
+    public ReturnStrategy getReturnStrategy() {
+        return returnStrategy;
+    }
+
+    public void setReturnStrategy(ReturnStrategy returnStrategy) {
+        this.returnStrategy = returnStrategy;
     }
 
     @Override
