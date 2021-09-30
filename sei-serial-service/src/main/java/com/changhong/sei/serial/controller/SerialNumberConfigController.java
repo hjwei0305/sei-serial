@@ -16,12 +16,14 @@ import com.changhong.sei.serial.sdk.entity.BarCodeDto;
 import com.changhong.sei.serial.service.BarCodeAssociateService;
 import com.changhong.sei.serial.service.SerialNumberConfigService;
 import io.swagger.annotations.Api;
+import org.apache.commons.collections.CollectionUtils;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Objects;
 
 @RestController
 @Api(value = "SerialNumberConfigApi", tags = "barCode查询api")
@@ -37,7 +39,12 @@ public class SerialNumberConfigController implements SerialNumberConfigApi {
     @PostMapping("save")
     public ResultData<SerialNumberConfig> save(@RequestBody SerialNumberConfig serialNumberConfig){
         OperateResultWithData<SerialNumberConfig> result = serialNumberConfigService.save(serialNumberConfig);
-        return ResultData.success(result.getData());
+        if(result.getSuccess()){
+            return ResultData.success(result.getData());
+        }else {
+            return ResultData.fail(result.getMessage());
+        }
+
     }
 
     @PostMapping("findAll")
@@ -65,6 +72,9 @@ public class SerialNumberConfigController implements SerialNumberConfigApi {
     @GetMapping("getReferenceIdByBarCode")
     public ResultData<BarCodeAssociateDto> getReferenceIdByBarCode(@RequestParam String barCode){
         BarCodeAssociate barCodeAssociate = barCodeAssociateService.findByProperty("barCode",barCode);
+        if(Objects.isNull(barCodeAssociate)){
+            return ResultData.fail("未找到对应代码");
+        }
         ModelMapper modelMapper = new ModelMapper();
         return ResultData.success(modelMapper.map(barCodeAssociate,BarCodeAssociateDto.class));
     }
@@ -72,6 +82,9 @@ public class SerialNumberConfigController implements SerialNumberConfigApi {
     @GetMapping("getBarCodeListByReferenceId")
     public ResultData<List<BarCodeAssociateDto>> getBarCodeListByReferenceId(@RequestParam String referenceId){
         List<BarCodeAssociate> barCodeAssociates = barCodeAssociateService.findListByProperty("referenceId",referenceId);
+        if(CollectionUtils.isEmpty(barCodeAssociates)){
+            return ResultData.fail("未找到对应代码");
+        }
         ModelMapper modelMapper = new ModelMapper();
         return ResultData.success(modelMapper.map(barCodeAssociates,new TypeToken<List<BarCodeAssociateDto>>() {
         }.getType()));
@@ -84,6 +97,9 @@ public class SerialNumberConfigController implements SerialNumberConfigApi {
         searchFilter.setOperator(SearchFilter.Operator.IN);
         searchFilter.setValue(barCodes);
         List<BarCodeAssociate> barCodeAssociates = barCodeAssociateService.findByFilter(searchFilter);
+        if(CollectionUtils.isEmpty(barCodeAssociates)){
+            return ResultData.fail("未找到对应代码");
+        }
         ModelMapper modelMapper = new ModelMapper();
         return ResultData.success(modelMapper.map(barCodeAssociates,new TypeToken<List<BarCodeAssociateDto>>() {
         }.getType()));
