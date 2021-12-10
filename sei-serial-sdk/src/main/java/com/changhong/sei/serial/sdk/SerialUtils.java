@@ -1,9 +1,8 @@
 package com.changhong.sei.serial.sdk;
 
-import com.alibaba.fastjson.JSON;
+import com.changhong.sei.core.util.JsonUtils;
 import com.changhong.sei.serial.sdk.entity.BarCodeDto;
 import com.changhong.sei.serial.sdk.entity.IsolationRecordDto;
-import com.changhong.sei.util.thread.ThreadLocalUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +61,7 @@ public class SerialUtils {
             String urlName = getRequestUrl(configAddress + SERIAL_URI, params);
             log.debug("请求给号服务http地址为：{}", urlName);
             String utils = getHttpResult(urlName, "GET", null);
-            recordDto = JSON.parseObject(utils, IsolationRecordDto.class);
+            recordDto = JsonUtils.fromJson(utils, IsolationRecordDto.class);
             log.debug("获取 {} 的编号规则为 {}", path, recordDto);
         } catch (Exception e) {
             log.error("获取编号配置出错", e);
@@ -111,7 +110,8 @@ public class SerialUtils {
             conn.setRequestProperty("Accept", "application/json");
             conn.setRequestProperty("user-agent",
                     "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
-            String auth = ThreadLocalUtil.getTranVar(HEADER_TOKEN_KEY);
+//            String auth = ThreadLocalUtil.getTranVar(HEADER_TOKEN_KEY);
+            String auth = "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsImxvZ2luQWNjb3VudCI6ImFkbWluIiwiaXAiOiJVbmtub3duIiwidXNlck5hbWUiOiLns7vnu5_nrqHnkIblkZgiLCJsb2NhbGUiOiJ6aF9DTiIsInVzZXJJZCI6IkI1NEU4OTY0LUQxNEQtMTFFOC1BNjRCLTAyNDJDMEE4NDQxQiIsInJhbmRvbUtleSI6IjE4NUE2RUM0LTBFQjItMTFFQy1CNkZBLTAyNDJDMEE4NDYyOCIsImF1dGhvcml0eVBvbGljeSI6IlRlbmFudEFkbWluIiwidXNlclR5cGUiOiJFbXBsb3llZSIsImV4cCI6MTYzMDk3ODI2MSwiaWF0IjoxNjMwODkxODYxLCJ0ZW5hbnQiOiIxMDA0NCIsImFjY291bnQiOiJhZG1pbiJ9.qKoE43Pacf-sjq1OQfjoz3Ao-ORyFyzyIaEt-AX5f9nsfOcT3AE10hge8RU2BbCDwevWn2YAb2q9a_nu57s4gQ";
             log.info("获取当前登录token为 {}", auth);
             if (StringUtils.isNotBlank(auth)) {
                 conn.setRequestProperty(HEADER_TOKEN_KEY, auth);
@@ -128,7 +128,7 @@ public class SerialUtils {
             if (Objects.nonNull(params)) {
                 OutputStreamWriter out = null;
                 out = new OutputStreamWriter(conn.getOutputStream());
-                String jsonStr = JSON.toJSONString(params);
+                String jsonStr = JsonUtils.toJson(params);
                 out.write(jsonStr);
                 out.flush();
                 out.close();

@@ -1,13 +1,17 @@
-package com.changhong.sei.serial.sdk;
+package com.changhong.sei.serial.controller;
 
+import com.changhong.sei.serial.sdk.SerialService;
 import org.springframework.boot.jdbc.DataSourceBuilder;
-import org.springframework.boot.jdbc.DatabaseDriver;
 
 import javax.sql.DataSource;
-import java.util.HashMap;
-import java.util.Map;
 
-public class SerialServiceTest {
+/**
+ * @author liusonglin
+ * @version 1.0
+ * @Desc
+ * @date 2021/9/6 9:26
+ */
+public class NewTest {
 
     public static void main(String[] args) {
         SerialService serialService = new SerialService("http://dsei.changhong.com/api-gateway/sei-serial", null, getDataSource());
