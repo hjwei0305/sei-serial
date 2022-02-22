@@ -21,4 +21,6 @@ public interface SerialNumberConfigDao extends BaseEntityDao<SerialNumberConfig>
 
     SerialNumberConfig findByEntityClassNameAndConfigTypeAndTenantCode(String name, ConfigType configType, String className);
 
+    SerialNumberConfig findByEntityClassNameAndTenantCode(String name, String className);
+
 }

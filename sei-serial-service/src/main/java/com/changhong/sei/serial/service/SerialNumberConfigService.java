@@ -260,4 +260,31 @@ public class SerialNumberConfigService extends BaseEntityService<SerialNumberCon
         }
         return entity;
     }
+
+    @Transactional
+    public ResultData<IsolationRecord> refreshCurrentNumber(String className, String isolation, Long current) {
+        String tenantCode = ContextUtil.getTenantCode();
+        if (StringUtils.isBlank(tenantCode)) {
+            throw new SerialException("未获取到有效租户，请检查token是否有效");
+        }
+        if(StringUtils.isBlank(isolation)){
+            isolation = SerialUtils.DEFAULT_ISOLATION;
+        }
+        // 获取配置
+        SerialNumberConfig entity = dao.findByEntityClassNameAndTenantCode(className, tenantCode);
+        if (Objects.isNull(entity)) {
+            throw new SerialException("未获取到配置，请检查");
+        }
+
+        String dateString = SerialUtils.getDateStringByCycleStrategy(entity.getCycleStrategy().name());
+        IsolationRecord isolationRecord = isolationRecordService
+                .findByConfigIdAndIsolationCodeAndDateString(entity.getId(), isolation, dateString);
+        if (log.isDebugEnabled()) {
+            log.debug("通过className:{} ,获取到当前配置是 {}", className, entity);
+        }
+        isolationRecordService.updateCurrentNumber(isolationRecord.getId(),current);
+        isolationRecordService.clearCacheRecord(entity.getId());
+        this.clearConfigCache(entity);
+        return ResultData.success(isolationRecord);
+    }
 }

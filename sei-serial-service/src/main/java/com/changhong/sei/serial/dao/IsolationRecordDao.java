@@ -22,9 +22,10 @@ public interface IsolationRecordDao extends BaseEntityDao<IsolationRecord> {
 
     @Modifying
     @Transactional
-    @Query("update IsolationRecord isr set isr.currentNumber = :currentNumber where id = :id")
+    @Query("update IsolationRecord isr set isr.currentNumber = :currentNumber where isr.id = :id")
     void updateCurrentSerial(@Param("id") String id,@Param("currentNumber") Long currentNumber);
 
     @Modifying
     void deleteByConfigId(String s);
+
 }

@@ -44,7 +44,6 @@ public class SerialNumberConfigController implements SerialNumberConfigApi {
         }else {
             return ResultData.fail(result.getMessage());
         }
-
     }
 
     @PostMapping("findAll")
@@ -103,6 +102,11 @@ public class SerialNumberConfigController implements SerialNumberConfigApi {
         ModelMapper modelMapper = new ModelMapper();
         return ResultData.success(modelMapper.map(barCodeAssociates,new TypeToken<List<BarCodeAssociateDto>>() {
         }.getType()));
+    }
+
+    @PostMapping("refreshCurrentNumber")
+    public ResultData<IsolationRecord> refreshCurrentNumber(@RequestParam String className, String isolation, @RequestParam Long current){
+        return serialNumberConfigService.refreshCurrentNumber(className, isolation, current);
     }
 
 

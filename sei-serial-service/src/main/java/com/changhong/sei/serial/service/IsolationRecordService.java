@@ -13,6 +13,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import javax.transaction.Transactional;
 import java.util.Objects;
 import java.util.Set;
 
@@ -64,7 +65,7 @@ public class IsolationRecordService extends BaseEntityService<IsolationRecord> {
         stringRedisTemplate.opsForValue().set(key, JsonUtils.toJson(record));
     }
 
-    private void clearCacheRecord(String configId) {
+    public void clearCacheRecord(String configId) {
         String valueKey = getCacheKey(configId, "*", "*");
         Set<String> keys = stringRedisTemplate.keys(valueKey);
         if (!CollectionUtils.isEmpty(keys)) {
@@ -83,5 +84,11 @@ public class IsolationRecordService extends BaseEntityService<IsolationRecord> {
     public void deleteByConfigId(String s) {
         clearCacheRecord(s);
         isolationRecordDao.deleteByConfigId(s);
+    }
+
+
+    @Transactional
+    public void updateCurrentNumber(String id, Long current) {
+        isolationRecordDao.updateCurrentSerial(id,current);
     }
 }
