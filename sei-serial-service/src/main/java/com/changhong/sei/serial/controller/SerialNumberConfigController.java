@@ -109,6 +109,11 @@ public class SerialNumberConfigController implements SerialNumberConfigApi {
         return serialNumberConfigService.refreshCurrentNumber(className, isolation, current);
     }
 
+    @PostMapping("getCurrentNumber")
+    public ResultData<IsolationRecord> getCurrentNumber(@RequestParam String className, String isolation){
+        return serialNumberConfigService.getCurrentNumber(className, isolation);
+    }
+
 
 
 
