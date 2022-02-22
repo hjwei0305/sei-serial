@@ -290,4 +290,34 @@ public class SerialNumberConfigService extends BaseEntityService<SerialNumberCon
         this.clearConfigCache(entity);
         return ResultData.success(isolationRecord);
     }
+
+    @Transactional
+    public ResultData<IsolationRecord> getCurrentNumber(String className, String isolation) {
+        String tenantCode = ContextUtil.getTenantCode();
+        if (StringUtils.isBlank(tenantCode)) {
+            return ResultData.fail("未获取到有效租户，请检查token是否有效");
+        }
+        if(StringUtils.isBlank(isolation)){
+            isolation = SerialUtils.DEFAULT_ISOLATION;
+        }
+        // 获取配置
+        SerialNumberConfig entity = dao.findByEntityClassNameAndTenantCode(className, tenantCode);
+        if (Objects.isNull(entity)) {
+            return ResultData.fail("未找到对应的配置");
+        }
+
+        String dateString = SerialUtils.getDateStringByCycleStrategy(entity.getCycleStrategy().name());
+        IsolationRecord isolationRecord = isolationRecordService
+                .findByConfigIdAndIsolationCodeAndDateString(entity.getId(), isolation, dateString);
+        if(Objects.isNull(isolationRecord)){
+            return ResultData.fail("当前隔离码下没有给号数据,只需在页面上修改当前配置下的当前好即可");
+        }
+        if (log.isDebugEnabled()) {
+            log.debug("通过className:{} ,获取到当前配置是 {}", className, entity);
+        }
+        return ResultData.success(isolationRecord);
+    }
+
+
+
 }
