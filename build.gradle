@@ -19,7 +19,6 @@ subprojects {
         dependencies {
             classpath("org.springframework.boot:spring-boot-gradle-plugin:$springBootVersion")
             classpath("org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}")
-            classpath("gradle.plugin.com.google.cloud.tools:jib-gradle-plugin:2.1.0")
         }
     }
 
