@@ -1,6 +1,5 @@
 apply plugin: 'org.springframework.boot'
 apply plugin: 'io.spring.dependency-management'
-apply plugin: "com.google.cloud.tools.jib"
 
 // 扩展定义
 ext {
@@ -68,42 +67,4 @@ uploadArchives {
 
 install {
     enabled = false
-}
-
-// 打镜像
-jib {
-    // 拉取的镜像的配置
-    from {
-        image = 'java:8-jdk-alpine'
-    }
-    // 要生成的镜像的配置
-    to {
-        image = "$docker_registry_url/$docker_registry_namespace/$rootProject.name"
-        tags = ["${project.version}".toString(), 'latest']
-
-        auth {
-            username = "${docker_registry_username}"
-            password = "${docker_registry_password}"
-        }
-    }
-    container {
-        // 容器创建时间用
-        creationTime = 'USE_CURRENT_TIMESTAMP'
-        // jvmFlgs: JVM 容器的参数，和 Dockerfile 的 ENTRYPOINT作用相同
-        jvmFlags = [
-                '-Djava.security.egd=file:/dev/./urandom',
-                '-Dfile.encoding=utf-8',
-                '-Duser.timezone=GMT+08',
-                '-server',
-                '-Xms512m',
-                '-Xmx1024m'
-        ]
-        // jvmFlags = ['-Xms512m', '-Xdebug', '-Xmy:flag=jib-rules']
-        // 启动类限定名
-        mainClass = MainClass
-        // 容器暴露的端口，和 Dockerfile 的EXPOSE作用相同
-        ports = ['8080']
-    }
-    // 如果私有镜像仓库没有启用https，设置allowInsecureRegistries参数为true
-    allowInsecureRegistries = true
 }
